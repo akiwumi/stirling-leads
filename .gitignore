@@ -10,4 +10,5 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.tsbuildinfo
-/.DS_Store
+.DS_Store
+supabase/.temp
