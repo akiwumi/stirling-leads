@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/server";
 
-import { createCompany, searchCompanies, signOut } from "./actions";
+import { clearCompanies, createCompany, searchCompanies, signOut } from "./actions";
 
 const errorMessages: Record<string, string> = {
+  clear_confirmation_required: 'Type "CLEAR" before deleting the company list.',
   company_create_failed: "Could not save the company.",
   company_name_required: "Company name is required.",
   missing_serpapi_key: "Add SERPAPI_KEY to your environment before using lead search.",
@@ -20,7 +21,7 @@ const errorMessages: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; search?: string }>;
+  searchParams: Promise<{ cleared?: string; error?: string; search?: string }>;
 }) {
   const params = await searchParams;
   const supabase = await createClient();
@@ -68,6 +69,7 @@ export default async function DashboardPage({
 
         {errorMessage ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</p> : null}
         {params.search ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Search saved for: {params.search}</p> : null}
+        {params.cleared === "done" ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Company list cleared.</p> : null}
 
         <section className="grid gap-5 md:grid-cols-3">
           <DashboardCard title="Companies" value={String(companyCount ?? 0)} description="Manual and search-imported leads." />
@@ -101,13 +103,36 @@ export default async function DashboardPage({
             <Card>
               <CardHeader>
                 <CardTitle>Search leads</CardTitle>
-                <CardDescription>Phase 3 search intake via SerpAPI. Saves URLs into `lead_sources` and skips duplicate websites.</CardDescription>
+                <CardDescription>Phase 3 search intake via SerpAPI. Saves URLs into `lead_sources`, skips duplicate websites, and tries to avoid aggregators so you get official business sites.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form action={searchCompanies} className="grid gap-3">
                   <Input name="niche" placeholder="Niche: restaurants, estate agents, venues" required />
                   <Input name="location" placeholder="Location: Stirling, Glasgow, Stockholm" required />
                   <Button type="submit">Search and save leads</Button>
+                </form>
+                <p className="mt-3 text-sm text-[var(--muted-foreground)]">
+                  Search filter note: hotels use the strictest filter and try to skip booking, review, price-comparison, and recommendation sites.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage companies</CardTitle>
+                <CardDescription>Export your company list to Excel or clear all company records you own.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <a href="/dashboard/export">
+                  <Button type="button" variant="outline">
+                    Export to Excel
+                  </Button>
+                </a>
+
+                <form action={clearCompanies} className="space-y-3 rounded-2xl border border-red-200 p-4">
+                  <p className="text-sm text-[var(--muted-foreground)]">This deletes all companies you created, plus related contacts, notes, evidence, drafts, sends, and demos.</p>
+                  <Input name="confirmation" placeholder='Type "CLEAR" to confirm' />
+                  <Button type="submit">Clear company list</Button>
                 </form>
               </CardContent>
             </Card>

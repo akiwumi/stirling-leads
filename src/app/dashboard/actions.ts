@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { analyzeCompanyWebsite } from "@/lib/company-analysis";
 import { buildDemoLandingConfig, buildQrCodeDataUrl } from "@/lib/demo";
 import { generateEmailDraft } from "@/lib/email-draft";
-import { extractCompanyName, normalizeWebsiteUrl } from "@/lib/leads";
+import { buildSearchQuery, extractCompanyName, isLikelyAggregatorSite, normalizeWebsiteUrl } from "@/lib/leads";
 import { scoreLeadWithAI } from "@/lib/lead-score";
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
@@ -273,6 +273,20 @@ export async function signOut() {
   redirect("/login");
 }
 
+export async function clearCompanies(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const confirmation = String(formData.get("confirmation") ?? "").trim();
+
+  if (confirmation !== "CLEAR") {
+    redirect("/dashboard?error=clear_confirmation_required");
+  }
+
+  await supabase.from("companies").delete().eq("created_by", user.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/outreach");
+  redirect("/dashboard?cleared=done");
+}
+
 export async function createCompany(formData: FormData) {
   const { supabase, user } = await requireUser();
   const name = String(formData.get("name") ?? "").trim();
@@ -383,7 +397,7 @@ export async function searchCompanies(formData: FormData) {
   const query = `${niche} ${location}`;
   const url = new URL("https://serpapi.com/search.json");
   url.searchParams.set("engine", "google");
-  url.searchParams.set("q", query);
+  url.searchParams.set("q", buildSearchQuery(niche, location));
   url.searchParams.set("num", "10");
   url.searchParams.set("api_key", apiKey);
 
@@ -404,6 +418,10 @@ export async function searchCompanies(formData: FormData) {
     const normalizedWebsite = normalizeWebsiteUrl(result.link);
 
     if (!normalizedWebsite) {
+      continue;
+    }
+
+    if (isLikelyAggregatorSite(normalizedWebsite, result.title, result.snippet, niche)) {
       continue;
     }
 
