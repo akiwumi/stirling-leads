@@ -426,6 +426,24 @@ create table if not exists public.email_templates (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.campaigns (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  niche text,
+  location text,
+  status text default 'draft',
+  created_by uuid references public.users(id),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.campaign_leads (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid references public.campaigns(id) on delete cascade,
+  company_id uuid references public.companies(id) on delete cascade,
+  status text default 'new',
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.email_drafts (
   id uuid primary key default gen_random_uuid(),
   company_id uuid references public.companies(id) on delete cascade,
@@ -459,24 +477,6 @@ create table if not exists public.unsubscribe_list (
   email text unique not null,
   company_id uuid references public.companies(id) on delete set null,
   reason text,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.campaigns (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  niche text,
-  location text,
-  status text default 'draft',
-  created_by uuid references public.users(id),
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.campaign_leads (
-  id uuid primary key default gen_random_uuid(),
-  campaign_id uuid references public.campaigns(id) on delete cascade,
-  company_id uuid references public.companies(id) on delete cascade,
-  status text default 'new',
   created_at timestamptz not null default now()
 );
 
