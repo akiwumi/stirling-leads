@@ -14,6 +14,73 @@ This document is a beginner-friendly build list for adding:
 
 This is a plan document. It does not change the app by itself.
 
+## 0. Manual setup now required for the live enrichment pipeline
+
+The app code can now run a stronger enrichment flow, but 2 external services still need real credentials in your own environment.
+
+### Website rendering / anti-bot scraping
+
+Recommended:
+
+- `SCRAPER_PROVIDER=scrapingbee`
+- `SCRAPER_API_KEY=...`
+
+Why:
+
+- many company team/contact pages are rendered with JavaScript
+- many sites return incomplete HTML to normal server-side `fetch(...)`
+- the app now falls back to ScrapingBee rendering when direct fetch is weak or blocked
+
+### People enrichment / LinkedIn-style personnel discovery
+
+Recommended:
+
+- `PEOPLE_ENRICHMENT_PROVIDER=ninjapear`
+- `PEOPLE_ENRICHMENT_API_KEY=...`
+
+Why:
+
+- this is the provider-backed part of the pipeline for finding likely executives and key team members
+- it is safer and more reliable than trying to run brittle direct LinkedIn scraping from the app
+- the app now uses the provider to enrich key roles, pull best-effort work emails, and improve company address coverage
+
+### Environment variables to add
+
+Add these to your real `.env.local` or hosting env:
+
+```env
+PEOPLE_ENRICHMENT_PROVIDER=ninjapear
+PEOPLE_ENRICHMENT_API_KEY=your-provider-key
+SCRAPER_PROVIDER=scrapingbee
+SCRAPER_API_KEY=your-scraper-key
+OPENAI_API_KEY=your-openai-key
+OPENAI_MODEL=gpt-5.2
+```
+
+### What to test after adding keys
+
+1. Open a company with a public website.
+2. Click `Analyze website`.
+3. Click `Scan team pages`.
+4. Confirm:
+   - `Lead details -> Address` fills in
+   - people records appear with titles
+   - some records include work emails when public/provider evidence exists
+   - role coverage updates away from `Missing key roles` when founder / marketing / sales / operations contacts are found
+
+### Important limitation
+
+The app now supports a robust provider-backed enrichment pipeline, but not every company will expose:
+
+- named staff emails
+- personal phone numbers
+- public LinkedIn profile URLs
+
+So the system is now materially stronger, but it still depends on:
+
+- what is publicly available on the company site
+- what your enrichment provider can legally and reliably return
+
 ## 1. What we are building
 
 Right now the app is mainly company-first.

@@ -1,105 +1,155 @@
-type ScrapedPerson = {
+import { extractWebsiteEnrichmentWithAI, type AiExtractedPerson } from "@/lib/company-enrichment";
+import { enrichCompanyPeople } from "@/lib/people-enrichment";
+import { crawlCompanyWebsite, normalizeLinkedInUrl } from "@/lib/website-intelligence";
+
+export type ScrapedPerson = {
   name: string;
   jobTitle: string | null;
   email: string | null;
+  phone: string | null;
   linkedinUrl: string | null;
   linkedinSlug: string | null;
   sourceUrl: string;
   evidenceText: string;
+  confidence: number;
 };
 
 type PersonnelScrapeResult = {
   people: ScrapedPerson[];
   pagesChecked: string[];
+  postalAddress: string | null;
+  postalAddressSourceUrl: string | null;
+  contactPageUrl: string | null;
+  companyLinkedinUrl: string | null;
+  providerUsed: string | null;
+  warnings: string[];
   error?: string;
 };
 
-const TEAM_PAGE_PATHS = ["/team", "/our-team", "/about", "/about-us", "/leadership", "/people", "/company", "/contact", "/staff"];
-
 export async function scrapePersonnelFromWebsite(websiteUrl: string): Promise<PersonnelScrapeResult> {
-  const base = getBaseUrl(websiteUrl);
-  if (!base) return { people: [], pagesChecked: [], error: "Invalid URL" };
+  const crawl = await crawlCompanyWebsite(websiteUrl, { maxPages: 8, focus: "people" });
 
-  const pagesChecked: string[] = [];
-  const people: ScrapedPerson[] = [];
-  const seenNames = new Set<string>();
-
-  for (const path of TEAM_PAGE_PATHS) {
-    const pageUrl = `${base}${path}`;
-    try {
-      const res = await fetch(pageUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; StirlingBot/1.0)" },
-        signal: AbortSignal.timeout(8000),
-        cache: "no-store",
-      });
-
-      if (!res.ok) continue;
-
-      const html = await res.text();
-      pagesChecked.push(pageUrl);
-
-      const found = extractPeopleFromHtml(html, pageUrl);
-      for (const person of found) {
-        const key = person.name.toLowerCase().trim();
-        if (key.length < 2 || seenNames.has(key)) continue;
-        seenNames.add(key);
-        people.push(person);
-      }
-
-      if (people.length >= 20) break;
-    } catch {
-      // page unreachable — continue to next
-    }
+  if (!crawl.baseUrl) {
+    return {
+      people: [],
+      pagesChecked: [],
+      postalAddress: null,
+      postalAddressSourceUrl: null,
+      contactPageUrl: null,
+      companyLinkedinUrl: null,
+      providerUsed: null,
+      warnings: crawl.warnings,
+      error: "Invalid URL",
+    };
   }
 
-  return { people, pagesChecked };
+  const heuristicPeople = crawl.pages.flatMap((page) => extractPeopleFromHtml(page.html, page.url));
+  const aiEnrichment = await extractWebsiteEnrichmentWithAI({
+    websiteUrl: crawl.baseUrl,
+    pages: crawl.pages,
+  });
+  const providerEnrichment = await enrichCompanyPeople({
+    websiteUrl: crawl.baseUrl,
+  });
+
+  const merged = mergePeople([
+    ...heuristicPeople,
+    ...aiEnrichment.people.map((person) => toScrapedPerson(person)),
+    ...providerEnrichment.people.map((person) => toScrapedPerson(person)),
+  ]).slice(0, 25);
+
+  return {
+    people: merged,
+    pagesChecked: crawl.pagesChecked,
+    postalAddress: aiEnrichment.postalAddress ?? providerEnrichment.postalAddress,
+    postalAddressSourceUrl: aiEnrichment.postalAddressSourceUrl ?? crawl.contactPageUrl ?? crawl.baseUrl,
+    contactPageUrl: crawl.contactPageUrl,
+    companyLinkedinUrl:
+      normalizeLinkedInUrl(aiEnrichment.companyLinkedinUrl) ??
+      normalizeLinkedInUrl(providerEnrichment.companyLinkedinUrl) ??
+      crawl.linkedinUrls.find((url) => /linkedin\.com\/company\//i.test(url)) ??
+      null,
+    providerUsed: providerEnrichment.provider,
+    warnings: [...crawl.warnings, ...aiEnrichment.notes, ...providerEnrichment.warnings],
+  };
 }
 
-function getBaseUrl(url: string): string | null {
-  try {
-    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
-    return `${parsed.protocol}//${parsed.hostname}`;
-  } catch {
-    return null;
+function mergePeople(input: ScrapedPerson[]) {
+  const merged = new Map<string, ScrapedPerson>();
+
+  for (const person of input) {
+    const normalized = normalizePerson(person);
+    if (!normalized) continue;
+    const key = normalized.email?.toLowerCase() ?? normalized.linkedinSlug ?? normalized.name.toLowerCase();
+    const existing = merged.get(key);
+    if (!existing) {
+      merged.set(key, normalized);
+      continue;
+    }
+
+    merged.set(key, {
+      ...existing,
+      jobTitle: pickBetter(existing.jobTitle, normalized.jobTitle),
+      email: existing.email ?? normalized.email,
+      phone: existing.phone ?? normalized.phone,
+      linkedinUrl: existing.linkedinUrl ?? normalized.linkedinUrl,
+      linkedinSlug: existing.linkedinSlug ?? normalized.linkedinSlug,
+      sourceUrl: existing.sourceUrl || normalized.sourceUrl,
+      evidenceText: pickLonger(existing.evidenceText, normalized.evidenceText),
+      confidence: Math.max(existing.confidence, normalized.confidence),
+    });
   }
+
+  return [...merged.values()].sort((a, b) => b.confidence - a.confidence || a.name.localeCompare(b.name));
+}
+
+function normalizePerson(person: ScrapedPerson): ScrapedPerson | null {
+  const name = String(person.name ?? "").trim();
+  if (!looksLikeName(name)) return null;
+  const linkedinUrl = normalizeLinkedInUrl(person.linkedinUrl);
+  return {
+    ...person,
+    name,
+    jobTitle: person.jobTitle?.trim() || null,
+    email: person.email?.trim().toLowerCase() || null,
+    phone: person.phone?.trim() || null,
+    linkedinUrl,
+    linkedinSlug: extractLinkedInSlug(linkedinUrl),
+    sourceUrl: person.sourceUrl,
+    evidenceText: person.evidenceText?.trim() || name,
+    confidence: Math.max(0, Math.min(100, person.confidence || 0)),
+  };
+}
+
+function toScrapedPerson(person: AiExtractedPerson): ScrapedPerson {
+  return {
+    name: person.name,
+    jobTitle: person.jobTitle,
+    email: person.email,
+    phone: person.phone,
+    linkedinUrl: person.linkedinUrl,
+    linkedinSlug: extractLinkedInSlug(person.linkedinUrl),
+    sourceUrl: person.sourceUrl,
+    evidenceText: person.evidenceText,
+    confidence: person.confidence,
+  };
 }
 
 function extractPeopleFromHtml(html: string, sourceUrl: string): ScrapedPerson[] {
   const people: ScrapedPerson[] = [];
-
-  // Strip scripts and styles
   const clean = html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<script(?![^>]+application\/ld\+json)[^>]*>[\s\S]*?<\/script>/gi, "");
 
-  // Extract LinkedIn URLs first so we can match them to names
-  const linkedinPattern = /https?:\/\/(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_-]+)/g;
-  const linkedinUrls = new Map<string, string>(); // slug -> full url
-  let lm: RegExpExecArray | null;
-  while ((lm = linkedinPattern.exec(clean)) !== null) {
-    linkedinUrls.set(lm[1].toLowerCase(), lm[0]);
+  const linkedinUrls = new Map<string, string>();
+  for (const match of clean.matchAll(/https?:\/\/(?:www\.)?linkedin\.com\/in\/([a-zA-Z0-9_-]+)/gi)) {
+    const slug = match[1]?.toLowerCase();
+    if (slug) linkedinUrls.set(slug, match[0]);
   }
 
-  // Common structural patterns: card-like blocks with a name + title
-  // Pattern 1: schema.org Person markup
-  const schemaPersons = extractSchemaPersons(clean, sourceUrl, linkedinUrls);
-  people.push(...schemaPersons);
-
-  // Pattern 2: common card HTML patterns (h3/h4 + p siblings, or role/title near name)
-  if (people.length < 3) {
-    const cardPeople = extractFromCardPatterns(clean, sourceUrl, linkedinUrls);
-    people.push(...cardPeople);
-  }
-
-  // Pattern 3: extract emails and try to pair them with names
-  const emailPeople = extractEmailPeople(clean, sourceUrl);
-  // Only add emails not already captured
-  const existingEmails = new Set(people.map((p) => p.email).filter(Boolean));
-  for (const ep of emailPeople) {
-    if (ep.email && !existingEmails.has(ep.email)) {
-      people.push(ep);
-    }
-  }
+  people.push(...extractSchemaPersons(html, sourceUrl, linkedinUrls));
+  people.push(...extractFromCardPatterns(clean, sourceUrl, linkedinUrls));
+  people.push(...extractEmailPeople(clean, sourceUrl));
 
   return people;
 }
@@ -107,34 +157,33 @@ function extractPeopleFromHtml(html: string, sourceUrl: string): ScrapedPerson[]
 function extractSchemaPersons(html: string, sourceUrl: string, linkedinUrls: Map<string, string>): ScrapedPerson[] {
   const people: ScrapedPerson[] = [];
   const jsonLdPattern = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let m: RegExpExecArray | null;
 
-  while ((m = jsonLdPattern.exec(html)) !== null) {
+  for (const match of html.matchAll(jsonLdPattern)) {
     try {
-      const data = JSON.parse(m[1]);
+      const data = JSON.parse(match[1]);
       const items = Array.isArray(data) ? data : [data];
       for (const item of items) {
-        const persons = item["@type"] === "Person" ? [item] : (item.member ?? item.employee ?? []);
-        for (const p of Array.isArray(persons) ? persons : []) {
-          if (p["@type"] !== "Person" && !p.name) continue;
-          const name = String(p.name ?? "").trim();
-          if (!name) continue;
-          const jobTitle = String(p.jobTitle ?? p.description ?? "").trim() || null;
-          const email = extractEmail(String(p.email ?? "")) || null;
-          const slug = findLinkedInSlug(p.sameAs ?? [], linkedinUrls);
+        const persons = item["@type"] === "Person" ? [item] : [item.member, item.employee, item.founder].flat().filter(Boolean);
+        for (const person of persons) {
+          if (!person || typeof person !== "object") continue;
+          const name = String(person.name ?? "").trim();
+          if (!looksLikeName(name)) continue;
+          const linkedinUrl = findLinkedInUrl([person.sameAs, person.url], linkedinUrls);
           people.push({
             name,
-            jobTitle,
-            email,
-            linkedinUrl: slug ? `https://www.linkedin.com/in/${slug}` : findLinkedInByName(name, linkedinUrls),
-            linkedinSlug: slug,
+            jobTitle: String(person.jobTitle ?? person.description ?? "").trim() || null,
+            email: extractEmail(String(person.email ?? "")),
+            phone: extractPhone(String(person.telephone ?? "")),
+            linkedinUrl,
+            linkedinSlug: extractLinkedInSlug(linkedinUrl),
             sourceUrl,
-            evidenceText: `${name}${jobTitle ? ` — ${jobTitle}` : ""}`,
+            evidenceText: [name, person.jobTitle ?? person.description ?? null].filter(Boolean).join(" - "),
+            confidence: 82,
           });
         }
       }
     } catch {
-      // malformed JSON-LD
+      continue;
     }
   }
 
@@ -143,35 +192,27 @@ function extractSchemaPersons(html: string, sourceUrl: string, linkedinUrls: Map
 
 function extractFromCardPatterns(html: string, sourceUrl: string, linkedinUrls: Map<string, string>): ScrapedPerson[] {
   const people: ScrapedPerson[] = [];
+  const pattern = /<h[1-4][^>]*>([^<]{3,80})<\/h[1-4]>\s*(?:<[^>]+>\s*){0,3}([^<]{0,120})/gi;
 
-  // Look for common team card patterns:
-  // <h3>Name</h3> followed by <p>Title</p> within ~500 chars
-  const nameHeadingPattern = /<h[234][^>]*>([^<]{3,60})<\/h[234]>\s*(?:<[^>]+>\s*)*([^<]{3,80})?/gi;
-  let m: RegExpExecArray | null;
-
-  while ((m = nameHeadingPattern.exec(html)) !== null) {
-    const candidate = stripTags(m[1]).trim();
-    const context = stripTags(m[2] ?? "").trim();
-
+  for (const match of html.matchAll(pattern)) {
+    const candidate = stripTags(match[1]).trim();
     if (!looksLikeName(candidate)) continue;
-
-    // Grab the next ~400 chars for more context (title, linkedin link)
-    const snippet = html.slice(m.index, m.index + 500);
-    const email = extractEmail(snippet);
-    const linkedinMatch = snippet.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/);
+    const context = stripTags(match[2] ?? "").trim();
+    const snippet = html.slice(match.index ?? 0, (match.index ?? 0) + 700);
+    const linkedinMatch = snippet.match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/i);
     const slug = linkedinMatch?.[1]?.toLowerCase() ?? null;
-    const linkedinHref = slug ? (linkedinUrls.get(slug) ?? `https://www.linkedin.com/in/${slug}`) : findLinkedInByName(candidate, linkedinUrls);
-
+    const linkedinUrl = slug ? linkedinUrls.get(slug) ?? `https://www.linkedin.com/in/${slug}` : findLinkedInByName(candidate, linkedinUrls);
     people.push({
       name: candidate,
       jobTitle: looksLikeTitle(context) ? context : null,
-      email: email || null,
-      linkedinUrl: linkedinHref,
-      linkedinSlug: slug ?? extractLinkedInSlug(linkedinHref),
+      email: extractEmail(snippet),
+      phone: extractPhone(snippet),
+      linkedinUrl,
+      linkedinSlug: extractLinkedInSlug(linkedinUrl),
       sourceUrl,
-      evidenceText: `${candidate}${context ? ` — ${context}` : ""}`,
+      evidenceText: [candidate, context || null].filter(Boolean).join(" - "),
+      confidence: 68,
     });
-
     if (people.length >= 15) break;
   }
 
@@ -180,63 +221,63 @@ function extractFromCardPatterns(html: string, sourceUrl: string, linkedinUrls: 
 
 function extractEmailPeople(html: string, sourceUrl: string): ScrapedPerson[] {
   const people: ScrapedPerson[] = [];
-  const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
   const seen = new Set<string>();
-  let m: RegExpExecArray | null;
 
-  while ((m = emailPattern.exec(html)) !== null) {
-    const email = m[0].toLowerCase();
-    if (seen.has(email)) continue;
-    if (email.includes("example.") || email.includes("noreply") || email.includes("no-reply")) continue;
+  for (const match of html.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)) {
+    const email = match[0]?.toLowerCase();
+    if (!email || seen.has(email) || /example\.|noreply|no-reply/.test(email)) continue;
     seen.add(email);
-
-    // Try to find a name in the 300 chars before the email
-    const before = stripTags(html.slice(Math.max(0, m.index - 300), m.index));
+    const before = stripTags(html.slice(Math.max(0, (match.index ?? 0) - 260), match.index ?? 0));
     const nameMatch = before.match(/([A-Z][a-z]+ [A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s*$/);
-
+    const name = nameMatch?.[1] ?? email.split("@")[0];
     people.push({
-      name: nameMatch?.[1] ?? email.split("@")[0],
+      name,
       jobTitle: null,
       email,
+      phone: null,
       linkedinUrl: null,
       linkedinSlug: null,
       sourceUrl,
       evidenceText: email,
+      confidence: nameMatch ? 60 : 40,
     });
   }
 
   return people;
 }
 
-function stripTags(html: string): string {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+function stripTags(value: string) {
+  return value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function extractEmail(text: string): string | null {
-  const m = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  return m?.[0]?.toLowerCase() ?? null;
+function extractEmail(value: string): string | null {
+  const match = value.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  return match?.[0]?.toLowerCase() ?? null;
+}
+
+function extractPhone(value: string): string | null {
+  const match = value.match(/(?:\+\d{1,3}\s*)?(?:\(?\d{2,4}\)?[\s.-]*){2,4}\d{2,4}/);
+  return match?.[0]?.trim() ?? null;
 }
 
 function looksLikeName(text: string): boolean {
-  if (text.length > 60 || text.length < 4) return false;
-  if (/[<>{}\d@]/.test(text)) return false;
-  // Must have at least two words starting with caps
-  return /^[A-Z][a-z]+(\s[A-Z][a-z]+)+$/.test(text.trim());
+  if (!text || text.length < 4 || text.length > 80) return false;
+  if (/[<>{}@]/.test(text)) return false;
+  return /^[A-Z][a-z]+(?:[\s-][A-Z][a-z.'-]+)+$/.test(text.trim());
 }
 
 function looksLikeTitle(text: string): boolean {
-  if (!text || text.length > 80 || text.length < 3) return false;
-  if (/[<>{}@]/.test(text)) return false;
-  const titleWords = ["manager", "director", "head", "ceo", "cto", "cmo", "founder", "lead", "officer", "president", "vp", "engineer", "designer", "analyst", "consultant", "partner", "associate"];
-  const lower = text.toLowerCase();
-  return titleWords.some((w) => lower.includes(w));
+  if (!text || text.length < 3 || text.length > 100) return false;
+  return /(founder|ceo|chief|director|head|manager|lead|marketing|sales|operations|growth|president|officer|owner|partner)/i.test(text);
 }
 
-function findLinkedInSlug(sameAs: unknown, linkedinUrls: Map<string, string>): string | null {
-  const items = Array.isArray(sameAs) ? sameAs : [sameAs];
-  for (const item of items) {
-    const m = String(item ?? "").match(/linkedin\.com\/in\/([a-zA-Z0-9_-]+)/);
-    if (m) return m[1].toLowerCase();
+function findLinkedInUrl(values: unknown[], linkedinUrls: Map<string, string>) {
+  for (const value of values.flat()) {
+    const normalized = normalizeLinkedInUrl(String(value ?? ""));
+    if (normalized) return normalized;
+  }
+  for (const url of linkedinUrls.values()) {
+    return url;
   }
   return null;
 }
@@ -244,14 +285,24 @@ function findLinkedInSlug(sameAs: unknown, linkedinUrls: Map<string, string>): s
 function findLinkedInByName(name: string, linkedinUrls: Map<string, string>): string | null {
   const slug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
   if (linkedinUrls.has(slug)) return linkedinUrls.get(slug)!;
-  for (const [s, url] of linkedinUrls.entries()) {
-    if (s.includes(slug.slice(0, 6))) return url;
+  for (const [candidate, url] of linkedinUrls.entries()) {
+    if (candidate.includes(slug.slice(0, 6))) return url;
   }
   return null;
 }
 
-function extractLinkedInSlug(url: string | null): string | null {
-  if (!url) return null;
-  const m = url.match(/linkedin\.com\/in\/([^/?#]+)/);
-  return m?.[1] ?? null;
+function pickBetter(current: string | null, incoming: string | null) {
+  if (!current) return incoming;
+  if (!incoming) return current;
+  return incoming.length > current.length ? incoming : current;
+}
+
+function pickLonger(current: string, incoming: string) {
+  return incoming.length > current.length ? incoming : current;
+}
+
+function extractLinkedInSlug(url: string | null | undefined): string | null {
+  const normalized = normalizeLinkedInUrl(url);
+  const match = normalized?.match(/linkedin\.com\/in\/([^/?#]+)/i);
+  return match?.[1]?.toLowerCase() ?? null;
 }

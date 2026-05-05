@@ -1582,16 +1582,21 @@ export async function scrapePersonnel(formData: FormData) {
   const { people, pagesChecked } = result;
   let insertedCount = 0;
 
+  if (result.postalAddress) {
+    await supabase.from("companies").update({ address_line: result.postalAddress }).eq("id", companyId);
+  }
+
   for (const person of people) {
     const { id: contactId, inserted } = await upsertCompanyContact(supabase, companyId, {
       name: person.name,
       jobTitle: person.jobTitle,
       email: person.email,
+      phone: person.phone,
       linkedinUrl: person.linkedinUrl,
       sourceUrl: person.sourceUrl,
       consentBasis: "public website",
-      sourceType: "website_scrape",
-      sourceConfidence: 70,
+      sourceType: result.providerUsed ? `${result.providerUsed}_plus_website` : "website_scrape",
+      sourceConfidence: person.confidence || (result.providerUsed ? 84 : 70),
       enrichmentStatus: "scraped",
     });
 
@@ -1601,7 +1606,7 @@ export async function scrapePersonnel(formData: FormData) {
       await supabase.from("contact_sources").insert({
         contact_id: contactId,
         company_id: companyId,
-        source_kind: "website_team_page",
+        source_kind: result.providerUsed ? "provider_enrichment" : "website_team_page",
         source_url: person.sourceUrl,
         evidence_text: person.evidenceText,
       });
@@ -1615,7 +1620,8 @@ export async function scrapePersonnel(formData: FormData) {
 
   const count = insertedCount;
   const pages = pagesChecked.length;
-  redirect(`/dashboard/companies/${companyId}?scraped=${count}&pages=${pages}`);
+  const provider = result.providerUsed ? `&provider=${encodeURIComponent(result.providerUsed)}` : "";
+  redirect(`/dashboard/companies/${companyId}?scraped=${count}&pages=${pages}${provider}`);
 }
 
 export async function refreshCompanyNow(formData: FormData) {

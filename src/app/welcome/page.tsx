@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { isSessionUserConfirmed, syncConfirmedEmailToProfile } from "@/lib/auth-state";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPostSignInPath } from "@/lib/auth-flow";
 import { getPricingSummary } from "@/lib/pricing";
@@ -26,6 +27,10 @@ export default async function WelcomePage({
 
   if (!user) {
     redirect("/login");
+  }
+
+  if (isSessionUserConfirmed(user)) {
+    await syncConfirmedEmailToProfile(supabase, user);
   }
 
   const nextPath = await getPostSignInPath(supabase, user.id);
@@ -69,7 +74,7 @@ export default async function WelcomePage({
               <div className="rounded-[1.5rem] border border-[#ece7de] bg-[#fbfaf7] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Email status</p>
                 <p className="mt-2 text-sm text-slate-700">
-                  {profile?.email_confirmed_at ? "Verified" : "Waiting for verification"}
+                  {profile?.email_confirmed_at || isSessionUserConfirmed(user) ? "Verified" : "Waiting for verification"}
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-[#ece7de] bg-[#fbfaf7] p-4">

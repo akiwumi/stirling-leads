@@ -115,7 +115,6 @@ export default async function ListDetailPage({
                             target="_blank"
                             rel="noreferrer"
                             className="text-blue-500 hover:underline"
-                            onClick={(e) => e.stopPropagation()}
                           >
                             LinkedIn ↗
                           </a>

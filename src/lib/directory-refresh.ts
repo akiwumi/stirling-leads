@@ -51,10 +51,11 @@ export async function refreshCompany(supabase: SupabaseClient, companyId: string
 
       const freshData = {
         description: analysis.summary ?? null,
+        address_line: analysis.postalAddress ?? company.address_line ?? null,
       };
 
       const events = detectCompanyChanges(
-        { name: company.name, website_url: company.website_url, industry: company.industry, city: company.city, country: company.country, description: company.description },
+        { name: company.name, website_url: company.website_url, industry: company.industry, city: company.city, country: company.country, description: company.description, address_line: company.address_line },
         freshData,
         company.website_url,
       );
@@ -119,10 +120,10 @@ export async function refreshCompany(supabase: SupabaseClient, companyId: string
           department: inferDepartment(person.jobTitle),
           seniority: inferSeniority(person.jobTitle),
           linkedin_url: person.linkedinUrl,
-          work_email: person.email,
-          direct_phone: null,
-          employer_name: company.name,
-        };
+            work_email: person.email,
+            direct_phone: person.phone,
+            employer_name: company.name,
+          };
 
         if (!existing) {
           const { data: inserted } = await supabase.from("contacts").insert({
@@ -136,11 +137,13 @@ export async function refreshCompany(supabase: SupabaseClient, companyId: string
             work_email: person.email,
             email: person.email,
             employer_name: company.name,
+            direct_phone: person.phone,
+            phone: person.phone,
             linkedin_url: person.linkedinUrl,
             linkedin_slug: person.linkedinSlug,
             source_url: person.sourceUrl,
             source_type: "website_refresh",
-            source_confidence: 65,
+            source_confidence: person.confidence || 65,
             consent_basis: "public website",
             enrichment_status: "refreshed",
             is_decision_maker: isDecisionMaker(person.jobTitle, normalizedRole),
@@ -187,11 +190,11 @@ export async function refreshCompany(supabase: SupabaseClient, companyId: string
           role: person.jobTitle,
           email: person.email,
           phone: existing.phone,
-          direct_phone: existing.direct_phone,
+          direct_phone: person.phone ?? existing.direct_phone,
           linkedin_slug: person.linkedinSlug,
           source_url: person.sourceUrl,
           source_type: "website_refresh",
-          source_confidence: 65,
+          source_confidence: person.confidence || 65,
           consent_basis: existing.consent_basis ?? "public website",
           enrichment_status: "refreshed",
           is_decision_maker: isDecisionMaker(person.jobTitle, normalizedRole),

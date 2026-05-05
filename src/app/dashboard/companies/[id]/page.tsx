@@ -30,7 +30,7 @@ export default async function CompanyDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ analysis?: string; demo?: string; error?: string; score?: string; scraped?: string; pages?: string; refreshed?: string; crm?: string }>;
+  searchParams: Promise<{ analysis?: string; demo?: string; error?: string; score?: string; scraped?: string; pages?: string; provider?: string; refreshed?: string; crm?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
@@ -69,7 +69,7 @@ export default async function CompanyDetailPage({
   const latestScore = leadScores?.[0] ?? null;
   const latestDemo = demos?.[0] ?? null;
   const errorMessage = getErrorMessage(query.error);
-  const successMessage = getSuccessMessage({ analysis: query.analysis, demo: query.demo, score: query.score, scraped: query.scraped, pages: query.pages });
+  const successMessage = getSuccessMessage({ analysis: query.analysis, demo: query.demo, score: query.score, scraped: query.scraped, pages: query.pages, provider: query.provider, refreshed: query.refreshed });
 
   const timeline = [
     {
@@ -487,12 +487,12 @@ export default async function CompanyDetailPage({
                               {(contact.work_email || contact.email) ? <span>{contact.work_email || contact.email}</span> : null}
                               {(contact.direct_phone || contact.phone) ? <span>{contact.direct_phone || contact.phone}</span> : null}
                               {contact.linkedin_url ? (
-                                <a href={contact.linkedin_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                <a href={contact.linkedin_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
                                   LinkedIn ↗
                                 </a>
                               ) : null}
                               {contact.source_url ? (
-                                <a href={contact.source_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                <a href={contact.source_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
                                   Source page ↗
                                 </a>
                               ) : null}
@@ -676,6 +676,14 @@ function getErrorMessage(value?: string) {
     return "Draft generation failed.";
   }
 
+  if (value === "scrape_failed") {
+    return "Team scan failed. Check the website URL, scraper key, and enrichment provider setup.";
+  }
+
+  if (value === "refresh_failed") {
+    return "Refresh failed. Check the website URL, scraper key, and enrichment provider setup.";
+  }
+
   if (value === "missing_contact_email") {
     return "Choose a contact with an email address before generating a draft.";
   }
@@ -683,7 +691,7 @@ function getErrorMessage(value?: string) {
   return null;
 }
 
-function getSuccessMessage(query: { analysis?: string; demo?: string; score?: string; scraped?: string; pages?: string }) {
+function getSuccessMessage(query: { analysis?: string; demo?: string; score?: string; scraped?: string; pages?: string; provider?: string; refreshed?: string }) {
   if (query.analysis === "done") {
     return "Website analysis saved.";
   }
@@ -699,7 +707,13 @@ function getSuccessMessage(query: { analysis?: string; demo?: string; score?: st
   if (query.scraped !== undefined) {
     const count = query.scraped ?? "0";
     const pages = query.pages ?? "0";
-    return `Team page scan complete. Found ${count} ${Number(count) === 1 ? "person" : "people"} across ${pages} ${Number(pages) === 1 ? "page" : "pages"}.`;
+    const providerSuffix = query.provider ? ` using ${query.provider} enrichment` : "";
+    return `Team page scan complete. Found ${count} ${Number(count) === 1 ? "person" : "people"} across ${pages} ${Number(pages) === 1 ? "page" : "pages"}${providerSuffix}.`;
+  }
+
+  if (query.refreshed !== undefined) {
+    const count = query.refreshed ?? "0";
+    return `Company refresh complete. ${count} ${Number(count) === 1 ? "new person was" : "new people were"} added.`;
   }
 
   return null;

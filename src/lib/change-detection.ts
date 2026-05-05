@@ -8,7 +8,7 @@ export type ChangeEvent = {
 };
 
 const COMPANY_FIELDS: Array<keyof CompanySnapshot> = [
-  "name", "website_url", "industry", "city", "country", "description",
+  "name", "website_url", "industry", "city", "country", "description", "address_line",
 ];
 
 const CONTACT_FIELDS: Array<keyof ContactSnapshot> = [
@@ -23,6 +23,7 @@ export type CompanySnapshot = {
   city: string | null;
   country: string | null;
   description: string | null;
+  address_line: string | null;
 };
 
 export type ContactSnapshot = {

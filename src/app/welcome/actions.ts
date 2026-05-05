@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { isSessionUserConfirmed, syncConfirmedEmailToProfile } from "@/lib/auth-state";
 import { buildWelcomeEmailContent, sendStoredTransactionalEmail } from "@/lib/transactional-email";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,7 +26,13 @@ export async function enterDashboardFromWelcome(formData: FormData) {
     redirect("/welcome?error=missing_email");
   }
 
-  if (!profile.email_confirmed_at) {
+  const sessionUserConfirmed = isSessionUserConfirmed(user);
+
+  if (sessionUserConfirmed) {
+    await syncConfirmedEmailToProfile(supabase, user);
+  }
+
+  if (!profile.email_confirmed_at && !sessionUserConfirmed) {
     redirect("/welcome?error=confirm_email_first");
   }
 
