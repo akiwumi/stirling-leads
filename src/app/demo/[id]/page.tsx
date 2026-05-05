@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import { workspaceCardClass, workspaceInsetClass, workspaceRootStyle } from "@/components/workspace-theme";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DemoPage({
@@ -26,16 +27,16 @@ export default async function DemoPage({
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f5f3ea_0%,#e6efe9_100%)] px-6 py-12">
-      <section className="w-full max-w-3xl rounded-[2rem] border bg-white/85 p-8 shadow-[0_25px_80px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+    <main className="flex min-h-screen items-center justify-center px-[100px] py-12" style={workspaceRootStyle}>
+      <section className={`w-full max-w-3xl p-8 backdrop-blur-sm ${workspaceCardClass}`}>
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">{config.eyebrow || "Demo QR campaign"}</p>
-        <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-tight">{config.headline || demo.title || "Dynamic QR demo"}</h1>
+        <h1 className="mt-4 max-w-2xl font-[family:var(--font-display)] text-4xl tracking-[-0.05em] text-slate-800 leading-tight">{config.headline || demo.title || "Dynamic QR demo"}</h1>
         <p className="mt-4 max-w-2xl text-lg text-[var(--muted-foreground)]">
           {config.body || "This demo shows how one QR code can point customers to a live destination that changes over time."}
         </p>
 
         <div className="mt-8 grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[1.5rem] border bg-[var(--muted)] p-6">
+          <div className={`${workspaceInsetClass} p-6`}>
             <p className="text-sm font-medium">{config.secondaryLabel || "Flexible destination"}</p>
             <ul className="mt-4 space-y-3 text-sm text-[var(--muted-foreground)]">
               <li>Update the destination without changing the printed code.</li>
@@ -52,7 +53,7 @@ export default async function DemoPage({
             </a>
           </div>
 
-          <div className="rounded-[1.5rem] border bg-white p-6">
+          <div className={`${workspaceInsetClass} p-6`}>
             <p className="text-sm text-[var(--muted-foreground)]">QR preview</p>
             {demo.qr_code_url ? (
               <Image

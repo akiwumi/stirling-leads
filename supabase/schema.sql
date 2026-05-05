@@ -15,6 +15,7 @@ create table if not exists public.companies (
   industry text,
   city text,
   country text,
+  address_line text,
   description text,
   status text default 'new',
   lead_score integer default 0,
@@ -23,6 +24,8 @@ create table if not exists public.companies (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.companies add column if not exists address_line text;
 
 create table if not exists public.contacts (
   id uuid primary key default gen_random_uuid(),

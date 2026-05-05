@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowRight, MailCheck, Megaphone, PenSquare, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkspaceEmptyState, WorkspaceHero, WorkspaceMetricCard, WorkspacePill, workspaceCardClass, workspaceInsetClass, workspaceSoftInsetClass } from "@/components/workspace-theme";
 import { createClient } from "@/lib/supabase/server";
 
-import { createCampaign, createEmailTemplate, signOut } from "../actions";
+import { createCampaign, createEmailTemplate } from "../actions";
 
 const errorMessages: Record<string, string> = {
   campaign_name_required: "Campaign name is required.",
@@ -56,90 +58,98 @@ export default async function OutreachPage({
   });
 
   return (
-    <main className="min-h-screen px-6 py-8 lg:px-10">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col gap-4 rounded-[2rem] border bg-white/80 p-6 backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <Link className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]" href="/dashboard">
-              Back to dashboard
+    <main className="space-y-8">
+      <WorkspaceHero
+        actions={
+          <>
+            <Link href="/dashboard/analytics">
+              <Button className="rounded-full bg-white/85 text-slate-800 hover:bg-white" type="button" variant="outline">
+                View conversion analytics
+              </Button>
             </Link>
-            <h1 className="mt-3 text-3xl font-semibold">Outreach</h1>
-            <p className="mt-2 text-[var(--muted-foreground)]">
-              Phase 7 to 9: templates, drafts, approvals, sending, and campaign performance.
-            </p>
-          </div>
+            <Link href="/dashboard">
+              <Button className="rounded-full" type="button">
+                Back to leads
+              </Button>
+            </Link>
+          </>
+        }
+        description="Build templates, group companies into campaigns, review AI-generated drafts, and watch which sectors actually reply."
+        eyebrow="Outreach studio"
+        title="Draft, approve, send, learn"
+        tone="apricot"
+      />
 
-          <form action={signOut}>
-            <Button variant="outline" type="submit">
-              Sign out
-            </Button>
-          </form>
-        </header>
+      {params.error ? <div className="rounded-[1.5rem] border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-700">{errorMessages[params.error]}</div> : null}
 
-        {params.error ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessages[params.error]}</p> : null}
+      <section className="grid gap-5 md:grid-cols-4">
+        <MetricCard icon={<PenSquare className="h-4 w-4" />} title="Templates" value={String(templates?.length ?? 0)} />
+        <MetricCard icon={<Megaphone className="h-4 w-4" />} title="Campaigns" value={String(campaigns?.length ?? 0)} />
+        <MetricCard icon={<MailCheck className="h-4 w-4" />} title="Pending drafts" value={String((drafts ?? []).filter((draft) => draft.status === "needs_review").length)} />
+        <MetricCard icon={<Send className="h-4 w-4" />} title="Approved to send" value={String(approvedCount ?? 0)} />
+      </section>
 
-        <section className="grid gap-5 md:grid-cols-4">
-          <MetricCard title="Templates" value={String(templates?.length ?? 0)} />
-          <MetricCard title="Campaigns" value={String(campaigns?.length ?? 0)} />
-          <MetricCard title="Pending drafts" value={String((drafts ?? []).filter((draft) => draft.status === "needs_review").length)} />
-          <MetricCard title="Approved to send" value={String(approvedCount ?? 0)} />
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
+      <section className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
           <div className="space-y-6">
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Create template</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Create template</CardTitle>
                 <CardDescription>Reusable subject and body hints for AI-generated outreach drafts.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form action={createEmailTemplate} className="space-y-3">
-                  <Input name="name" placeholder="Template name" required />
-                  <Input name="niche" placeholder="Niche" />
-                  <Input name="subjectTemplate" placeholder="Subject guidance" />
-                  <Textarea name="bodyTemplate" placeholder="Body guidance and positioning." />
-                  <Button type="submit">Save template</Button>
+                  <Input className="border-white/70 bg-white/80" name="name" placeholder="Template name" required />
+                  <Input className="border-white/70 bg-white/80" name="niche" placeholder="Niche" />
+                  <Input className="border-white/70 bg-white/80" name="subjectTemplate" placeholder="Subject guidance" />
+                  <Textarea className="border-white/70 bg-white/80" name="bodyTemplate" placeholder="Body guidance and positioning." />
+                  <Button className="rounded-full" type="submit">Save template</Button>
                 </form>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Create campaign</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Create campaign</CardTitle>
                 <CardDescription>Group leads and drafts under one outreach effort.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form action={createCampaign} className="space-y-3">
-                  <Input name="name" placeholder="Campaign name" required />
-                  <Input name="niche" placeholder="Niche" />
-                  <Input name="location" placeholder="Location" />
-                  <Input defaultValue="draft" name="status" placeholder="Status" />
-                  <Button type="submit">Create campaign</Button>
+                  <Input className="border-white/70 bg-white/80" name="name" placeholder="Campaign name" required />
+                  <Input className="border-white/70 bg-white/80" name="niche" placeholder="Niche" />
+                  <Input className="border-white/70 bg-white/80" name="location" placeholder="Location" />
+                  <Input className="border-white/70 bg-white/80" defaultValue="draft" name="status" placeholder="Status" />
+                  <Button className="rounded-full" type="submit">Create campaign</Button>
                 </form>
               </CardContent>
             </Card>
           </div>
 
           <div className="space-y-6">
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Draft review queue</CardTitle>
-                <CardDescription>Edit and approve drafts before any email is sent.</CardDescription>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                  <div>
+                    <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Draft review queue</CardTitle>
+                    <CardDescription>Edit and approve drafts before any email is sent.</CardDescription>
+                  </div>
+                  <Link className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-800" href="/dashboard/analytics">
+                    See sector reply rates
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {(drafts ?? []).length === 0 ? (
-                  <EmptyState text="No drafts yet." />
+                  <WorkspaceEmptyState text="No drafts yet." />
                 ) : (
                   (drafts ?? []).map((draft) => (
-                    <Link className="block rounded-2xl border p-4 transition hover:border-[var(--primary)]" href={`/dashboard/outreach/drafts/${draft.id}`} key={draft.id}>
+                    <Link className={`block p-4 transition hover:border-white hover:bg-white ${workspaceInsetClass}`} href={`/dashboard/outreach/drafts/${draft.id}`} key={draft.id}>
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-medium">{draft.subject || "Untitled draft"}</p>
-                          <p className="mt-1 text-sm text-[var(--muted-foreground)]">{draft.status}</p>
+                          <p className="font-medium text-slate-800">{draft.subject || "Untitled draft"}</p>
+                          <p className="mt-1 text-sm text-slate-500">{draft.status}</p>
                         </div>
-                        <span className="rounded-full bg-[var(--muted)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                          {draft.status}
-                        </span>
+                        <WorkspacePill>{draft.status}</WorkspacePill>
                       </div>
                     </Link>
                   ))
@@ -147,25 +157,25 @@ export default async function OutreachPage({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Campaign performance</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Campaign performance</CardTitle>
                 <CardDescription>Simple Phase 9 dashboard for sends, opens, clicks, and replies.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {campaignPerformance.length === 0 ? (
-                  <EmptyState text="No campaigns yet." />
+                  <WorkspaceEmptyState text="No campaigns yet." />
                 ) : (
                   campaignPerformance.map((campaign) => (
-                    <div className="rounded-2xl border p-4" key={campaign.id}>
+                    <div className={`${workspaceSoftInsetClass} p-4`} key={campaign.id}>
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-medium">{campaign.name}</p>
-                          <p className="mt-1 text-sm text-[var(--muted-foreground)]">{campaign.status}</p>
+                          <p className="font-medium text-slate-800">{campaign.name}</p>
+                          <p className="mt-1 text-sm text-slate-500">{campaign.status}</p>
                         </div>
-                        <div className="text-right text-sm">
+                        <div className="text-right text-sm text-slate-700">
                           <p>{campaign.total} sent</p>
-                          <p className="text-[var(--muted-foreground)]">
+                          <p className="text-slate-500">
                             {campaign.opens} opens · {campaign.clicks} clicks · {campaign.replies} replies
                           </p>
                         </div>
@@ -177,22 +187,10 @@ export default async function OutreachPage({
             </Card>
           </div>
         </section>
-      </div>
     </main>
   );
 }
 
-function MetricCard({ title, value }: { title: string; value: string }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="text-4xl">{value}</CardTitle>
-      </CardHeader>
-    </Card>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-2xl border border-dashed p-4 text-sm text-[var(--muted-foreground)]">{text}</div>;
+function MetricCard({ icon, title, value }: { icon: React.ReactNode; title: string; value: string }) {
+  return <WorkspaceMetricCard icon={icon} title={title} value={value} />;
 }

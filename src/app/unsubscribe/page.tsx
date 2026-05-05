@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { workspaceCardClass, workspaceRootStyle } from "@/components/workspace-theme";
 
 async function unsubscribe(formData: FormData) {
   "use server";
@@ -29,10 +30,10 @@ export default async function UnsubscribePage({
   const query = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f7f7f2_0%,#ece8da_100%)] px-6 py-12">
-      <section className="w-full max-w-lg rounded-[2rem] border bg-white/85 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+    <main className="flex min-h-screen items-center justify-center px-[100px] py-12" style={workspaceRootStyle}>
+      <section className={`w-full max-w-lg p-8 backdrop-blur-sm ${workspaceCardClass}`}>
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">Unsubscribe</p>
-        <h1 className="mt-3 text-3xl font-semibold">Stop outreach emails</h1>
+        <h1 className="mt-3 font-[family:var(--font-display)] text-3xl tracking-[-0.04em] text-slate-800">Stop outreach emails</h1>
         <p className="mt-3 text-[var(--muted-foreground)]">
           Submit your email once and Stirling Lead Finder will keep it on the suppression list.
         </p>
@@ -50,7 +51,7 @@ export default async function UnsubscribePage({
             required
             type="email"
           />
-          <button className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)]" type="submit">
+          <button className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--primary)] px-5 py-2 text-sm font-medium text-[var(--primary-foreground)] transition hover:opacity-90" type="submit">
             Unsubscribe
           </button>
         </form>

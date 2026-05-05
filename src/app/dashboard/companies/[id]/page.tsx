@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkspaceBanner, WorkspaceEmptyState, WorkspaceHero, WorkspacePill, workspaceCardClass, workspaceInsetClass, workspaceSelectClass, workspaceSoftInsetClass } from "@/components/workspace-theme";
 import { createClient } from "@/lib/supabase/server";
 
 import {
@@ -17,6 +18,7 @@ import {
   generateLeadDraft,
   scoreLead,
   updateCompanyStatus,
+  updateContact,
 } from "../../actions";
 
 export default async function CompanyDetailPage({
@@ -104,49 +106,49 @@ export default async function CompanyDetailPage({
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
-    <main className="min-h-screen px-6 py-8 lg:px-10">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <Link className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]" href="/dashboard">
+    <main className="space-y-8">
+      <WorkspaceHero
+        actions={
+          <>
+            <Link className="inline-flex rounded-full border border-white/80 bg-white/85 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white" href="/dashboard">
               Back to dashboard
             </Link>
-            <h1 className="mt-3 text-3xl font-semibold">{company.name}</h1>
-            <p className="mt-2 text-[var(--muted-foreground)]">
-              {company.city ? `${company.city}, ` : ""}
-              {company.country || "No country set"} · {company.status}
-            </p>
-          </div>
-          {company.website_url ? (
-            <a className="text-sm text-[var(--primary)] underline-offset-4 hover:underline" href={company.website_url} target="_blank" rel="noreferrer">
-              Visit website
-            </a>
-          ) : null}
-        </div>
+            {company.website_url ? (
+              <a className="inline-flex rounded-full border border-white/80 bg-white/85 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white" href={company.website_url} target="_blank" rel="noreferrer">
+                Visit website
+              </a>
+            ) : null}
+          </>
+        }
+        description={`${company.city ? `${company.city}, ` : ""}${company.country || "No country set"} · ${company.status}`}
+        eyebrow="Lead profile"
+        title={company.name}
+      />
 
         <section className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
           <div className="space-y-6">
-            {errorMessage ? <Banner tone="error" text={errorMessage} /> : null}
-            {successMessage ? <Banner tone="success" text={successMessage} /> : null}
+            {errorMessage ? <WorkspaceBanner tone="error" text={errorMessage} /> : null}
+            {successMessage ? <WorkspaceBanner tone="success" text={successMessage} /> : null}
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Lead details</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Lead details</CardTitle>
                 <CardDescription>Manual CRM record with status, contacts, notes, and saved search evidence.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-3 text-sm">
                   <Info label="Industry" value={company.industry} />
                   <Info label="Website" value={company.website_url} />
+                  <Info label="Address" value={company.address_line} />
                   <Info label="Description" value={company.description} />
                 </div>
-                <form action={updateCompanyStatus} className="space-y-3 rounded-2xl border p-4">
+                <form action={updateCompanyStatus} className={`space-y-3 p-4 ${workspaceInsetClass}`}>
                   <input name="companyId" type="hidden" value={company.id} />
                   <label className="block text-sm font-medium" htmlFor="status">
                     Status
                   </label>
                   <select
-                    className="flex h-11 w-full rounded-xl border bg-[var(--input)] px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    className={workspaceSelectClass}
                     defaultValue={company.status ?? "new"}
                     id="status"
                     name="status"
@@ -163,9 +165,9 @@ export default async function CompanyDetailPage({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Analysis and scoring</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Analysis and scoring</CardTitle>
                 <CardDescription>Phases 4 to 6: website evidence, AI score, and demo QR landing page.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -189,7 +191,7 @@ export default async function CompanyDetailPage({
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border p-4">
+                  <div className={`${workspaceInsetClass} p-4`}>
                     <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Latest AI score</p>
                     {latestScore ? (
                       <>
@@ -201,11 +203,11 @@ export default async function CompanyDetailPage({
                         <p className="mt-2 text-sm text-[var(--muted-foreground)]">{latestScore.recommended_pitch || latestScore.reason}</p>
                       </>
                     ) : (
-                      <EmptyState text="No AI score yet." />
+                      <WorkspaceEmptyState text="No AI score yet." />
                     )}
                   </div>
 
-                  <div className="rounded-2xl border p-4">
+                  <div className={`${workspaceInsetClass} p-4`}>
                     <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">Latest demo</p>
                     {latestDemo ? (
                       <>
@@ -231,16 +233,16 @@ export default async function CompanyDetailPage({
                         </div>
                       </>
                     ) : (
-                      <EmptyState text="No demo generated yet." />
+                      <WorkspaceEmptyState text="No demo generated yet." />
                     )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Outreach</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Outreach</CardTitle>
                 <CardDescription>Phases 7 to 9: generate drafts, attach campaigns, review approval state, and track sends.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -252,7 +254,7 @@ export default async function CompanyDetailPage({
                         Contact
                       </label>
                       <select
-                        className="flex h-11 w-full rounded-xl border bg-[var(--input)] px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                        className={workspaceSelectClass}
                         defaultValue=""
                         id="contactId"
                         name="contactId"
@@ -273,7 +275,7 @@ export default async function CompanyDetailPage({
                         Campaign
                       </label>
                       <select
-                        className="flex h-11 w-full rounded-xl border bg-[var(--input)] px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                        className={workspaceSelectClass}
                         defaultValue=""
                         id="campaignId"
                         name="campaignId"
@@ -292,7 +294,7 @@ export default async function CompanyDetailPage({
                       Template
                     </label>
                     <select
-                      className="flex h-11 w-full rounded-xl border bg-[var(--input)] px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                      className={workspaceSelectClass}
                       defaultValue=""
                       id="templateId"
                       name="templateId"
@@ -311,7 +313,7 @@ export default async function CompanyDetailPage({
                 <form action={addCompanyToCampaign} className="flex flex-wrap gap-3">
                   <input name="companyId" type="hidden" value={company.id} />
                   <select
-                    className="flex h-11 min-w-56 rounded-xl border bg-[var(--input)] px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    className={`${workspaceSelectClass} min-w-56`}
                     defaultValue=""
                     name="campaignId"
                   >
@@ -331,18 +333,16 @@ export default async function CompanyDetailPage({
 
                 <div className="space-y-3">
                   {(drafts ?? []).length === 0 ? (
-                    <EmptyState text="No drafts yet." />
+                    <WorkspaceEmptyState text="No drafts yet." />
                   ) : (
                     (drafts ?? []).map((draft) => (
-                      <Link className="block rounded-2xl border p-4 transition hover:border-[var(--primary)]" href={`/dashboard/outreach/drafts/${draft.id}`} key={draft.id}>
+                      <Link className={`block p-4 transition hover:border-white hover:bg-white ${workspaceInsetClass}`} href={`/dashboard/outreach/drafts/${draft.id}`} key={draft.id}>
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="font-medium">{draft.subject || "Untitled draft"}</p>
                             <p className="mt-1 text-sm text-[var(--muted-foreground)]">{draft.status}</p>
                           </div>
-                          <span className="rounded-full bg-[var(--muted)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                            {draft.status}
-                          </span>
+                          <WorkspacePill>{draft.status}</WorkspacePill>
                         </div>
                       </Link>
                     ))
@@ -351,9 +351,9 @@ export default async function CompanyDetailPage({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Contacts</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Contacts</CardTitle>
                 <CardDescription>Add the people or inboxes you may contact later.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
@@ -375,15 +375,34 @@ export default async function CompanyDetailPage({
 
                 <div className="space-y-3">
                   {(contacts ?? []).length === 0 ? (
-                    <EmptyState text="No contacts yet." />
+                    <WorkspaceEmptyState text="No contacts yet." />
                   ) : (
                     (contacts ?? []).map((contact) => (
-                      <div className="rounded-2xl border p-4" key={contact.id}>
-                        <p className="font-medium">{contact.name || contact.email || "Unnamed contact"}</p>
-                        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                          {[contact.role, contact.email, contact.phone].filter(Boolean).join(" · ") || "No details yet"}
-                        </p>
-                      </div>
+                      <details key={contact.id} className={`${workspaceSoftInsetClass} group`}>
+                        <summary className="flex cursor-pointer list-none items-center justify-between p-4">
+                          <div>
+                            <p className="font-medium">{contact.name || contact.email || "Unnamed contact"}</p>
+                            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                              {[contact.role, contact.email, contact.phone].filter(Boolean).join(" · ") || "No details yet"}
+                            </p>
+                          </div>
+                          <span className="text-xs text-[var(--muted-foreground)] group-open:hidden">Edit</span>
+                          <span className="hidden text-xs text-[var(--muted-foreground)] group-open:block">Close</span>
+                        </summary>
+                        <form action={updateContact} className="grid gap-3 border-t border-[#efe9e1] p-4 md:grid-cols-2">
+                          <input type="hidden" name="contactId" value={contact.id} />
+                          <input type="hidden" name="companyId" value={id} />
+                          <Input name="name" defaultValue={contact.name ?? ""} placeholder="Contact name" />
+                          <Input name="role" defaultValue={contact.role ?? ""} placeholder="Role" />
+                          <Input name="email" defaultValue={contact.email ?? ""} placeholder="Email" type="email" />
+                          <Input name="phone" defaultValue={contact.phone ?? ""} placeholder="Phone" />
+                          <Input name="contactType" defaultValue={contact.contact_type ?? ""} placeholder="Type: owner, general, manager" />
+                          <Input name="consentBasis" defaultValue={contact.consent_basis ?? ""} placeholder="Consent basis" />
+                          <div className="md:col-span-2">
+                            <Button type="submit">Save changes</Button>
+                          </div>
+                        </form>
+                      </details>
                     ))
                   )}
                 </div>
@@ -392,18 +411,18 @@ export default async function CompanyDetailPage({
           </div>
 
           <div className="space-y-6">
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Website evidence</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Website evidence</CardTitle>
                 <CardDescription>Saved findings from website analysis and search intake.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   {(leadSources ?? []).length === 0 ? (
-                    <EmptyState text="No evidence yet." />
+                    <WorkspaceEmptyState text="No evidence yet." />
                   ) : (
                     (leadSources ?? []).map((source) => (
-                      <div className="rounded-2xl border p-4 text-sm" key={source.id}>
+                      <div className={`${workspaceSoftInsetClass} p-4 text-sm`} key={source.id}>
                         <p className="font-medium">{formatSourceLabel(source.source_type)}</p>
                         <p className="mt-1 break-all">{source.found_text || source.source_url}</p>
                         <p className="mt-2 break-all text-[var(--muted-foreground)]">{source.source_url}</p>
@@ -414,9 +433,9 @@ export default async function CompanyDetailPage({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Notes</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Notes</CardTitle>
                 <CardDescription>Quick research and outreach notes for this lead.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -427,10 +446,10 @@ export default async function CompanyDetailPage({
                 </form>
                 <div className="space-y-3">
                   {(notes ?? []).length === 0 ? (
-                    <EmptyState text="No notes yet." />
+                    <WorkspaceEmptyState text="No notes yet." />
                   ) : (
                     (notes ?? []).map((note) => (
-                      <div className="rounded-2xl border p-4 text-sm" key={note.id}>
+                      <div className={`${workspaceSoftInsetClass} p-4 text-sm`} key={note.id}>
                         <p>{note.body}</p>
                         <p className="mt-2 text-[var(--muted-foreground)]">{formatDate(note.created_at)}</p>
                       </div>
@@ -440,14 +459,14 @@ export default async function CompanyDetailPage({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Activity history</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Activity history</CardTitle>
                 <CardDescription>Timeline from manual entry, contacts, notes, and search evidence.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {timeline.map((item) => (
-                  <div className="rounded-2xl border p-4" key={item.id}>
+                  <div className={`${workspaceSoftInsetClass} p-4`} key={item.id}>
                     <p className="text-sm font-medium">{item.label}</p>
                     <p className="mt-1 break-all text-sm text-[var(--muted-foreground)]">{item.detail}</p>
                     <p className="mt-2 text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">{formatDate(item.createdAt)}</p>
@@ -456,17 +475,17 @@ export default async function CompanyDetailPage({
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Send tracking</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Send tracking</CardTitle>
                 <CardDescription>Recent outreach events for this lead.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {(sends ?? []).length === 0 ? (
-                  <EmptyState text="No send records yet." />
+                  <WorkspaceEmptyState text="No send records yet." />
                 ) : (
                   (sends ?? []).map((send) => (
-                    <div className="rounded-2xl border p-4 text-sm" key={send.id}>
+                    <div className={`${workspaceSoftInsetClass} p-4 text-sm`} key={send.id}>
                       <p className="font-medium">Provider ID: {send.provider_message_id || "pending"}</p>
                       <p className="mt-1 text-[var(--muted-foreground)]">
                         Sent {send.sent_at ? formatDate(send.sent_at) : "not yet"} · opens {send.opened_at ? "yes" : "no"} · clicks {send.clicked_at ? "yes" : "no"} · replies{" "}
@@ -479,34 +498,15 @@ export default async function CompanyDetailPage({
             </Card>
           </div>
         </section>
-      </div>
     </main>
   );
 }
 
 function Info({ label, value }: { label: string; value: string | null }) {
   return (
-    <div>
+    <div className={`p-4 ${workspaceSoftInsetClass}`}>
       <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">{label}</p>
       <p className="mt-1 break-all">{value || "Not set"}</p>
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-2xl border border-dashed p-4 text-sm text-[var(--muted-foreground)]">{text}</div>;
-}
-
-function Banner({ text, tone }: { text: string; tone: "error" | "success" }) {
-  return (
-    <div
-      className={
-        tone === "error"
-          ? "rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700"
-          : "rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-      }
-    >
-      {text}
     </div>
   );
 }

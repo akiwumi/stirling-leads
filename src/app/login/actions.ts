@@ -9,7 +9,7 @@ export async function signIn(formData: FormData) {
   const password = formData.get("password");
 
   if (typeof email !== "string" || typeof password !== "string") {
-    redirect("/login?error=missing_credentials");
+    redirect("/?error=missing_credentials");
   }
 
   const supabase = await createClient();
@@ -19,7 +19,7 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
-    redirect("/login?error=invalid_credentials");
+    redirect("/?error=invalid_credentials");
   }
 
   redirect("/dashboard");

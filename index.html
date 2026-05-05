@@ -1,0 +1,2500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stirling Market Leads — AI Design System for Everything</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-void: #05050A;
+      --bg-deep: #08080F;
+      --bg-elevated: #0D0D1A;
+      --bg-surface: #121220;
+      --bg-float: #181828;
+      --text-bright: #F0EEFF;
+      --text-body: #B8B4D8;
+      --text-muted: #5C587A;
+      --text-ghost: #2A2840;
+      --accent-mint: #3DFFB0;
+      --accent-coral: #FF4D6D;
+      --accent-violet: #7B5FFF;
+      --accent-gold: #FFB830;
+      --border-subtle: rgba(120,110,200,0.10);
+      --border-medium: rgba(120,110,200,0.20);
+      --border-vivid: rgba(120,110,200,0.40);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-bright);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── NOISE TEXTURE ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.6;
+    }
+
+    /* ─────────────────── NAVIGATION ─────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(5,5,10,0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .nav-logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-mint));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .nav-logo-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .nav-logo-text {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-links a:hover { color: var(--text-bright); background: rgba(255,255,255,0.04); }
+
+    .nav-links a svg { opacity: 0.5; }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-ghost {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-body);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .btn-ghost:hover { color: var(--text-bright); background: rgba(255,255,255,0.06); }
+
+    .btn-primary {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: #05050A;
+      background: var(--accent-mint);
+      border: none;
+      cursor: pointer;
+      padding: 9px 20px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-primary:hover { background: #5AFFC3; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(61,255,176,0.25); }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* ─────────────────── HERO ─────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr auto;
+      padding-top: 80px;
+      overflow: hidden;
+    }
+
+    /* Ambient orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+    }
+
+    .orb-1 {
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(123,95,255,0.18) 0%, transparent 70%);
+      top: -100px;
+      right: -100px;
+    }
+
+    .orb-2 {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(61,255,176,0.10) 0%, transparent 70%);
+      bottom: 0;
+      left: -100px;
+    }
+
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,77,109,0.10) 0%, transparent 70%);
+      top: 40%;
+      left: 40%;
+    }
+
+    /* Hero Left */
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 60px 80px 80px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(61,255,176,0.08);
+      border: 1px solid rgba(61,255,176,0.20);
+      border-radius: 100px;
+      padding: 6px 14px 6px 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--accent-mint);
+      width: fit-content;
+      margin-bottom: 32px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .hero-badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-mint);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-headline {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(42px, 5vw, 68px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: var(--text-bright);
+      margin-bottom: 24px;
+    }
+
+    .hero-headline em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent-violet) 0%, var(--accent-mint) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--text-body);
+      max-width: 420px;
+      margin-bottom: 48px;
+      font-weight: 300;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn-hero-primary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #05050A;
+      background: var(--accent-mint);
+      border: none;
+      cursor: pointer;
+      padding: 14px 28px;
+      border-radius: 10px;
+      transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+      text-decoration: none;
+    }
+
+    .btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(61,255,176,0.30); background: #5AFFC3; }
+    .btn-hero-primary:active { transform: translateY(0); }
+
+    .btn-hero-secondary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-body);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-medium);
+      cursor: pointer;
+      padding: 14px 24px;
+      border-radius: 10px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-hero-secondary:hover { color: var(--text-bright); border-color: var(--border-vivid); background: rgba(255,255,255,0.07); }
+
+    .hero-social-proof {
+      margin-top: 52px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .avatar-stack {
+      display: flex;
+    }
+
+    .avatar-stack img {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--bg-void);
+      margin-left: -10px;
+      object-fit: cover;
+    }
+
+    .avatar-stack img:first-child { margin-left: 0; }
+
+    .social-proof-text {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .social-proof-text strong {
+      color: var(--text-body);
+      font-weight: 600;
+    }
+
+    /* Hero Right */
+    .hero-right {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      padding: 80px 80px 80px 40px;
+    }
+
+    .hero-visual-frame {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .ui-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .ui-card-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+    }
+
+    .dot-red { width: 10px; height: 10px; border-radius: 50%; background: #FF5F57; }
+    .dot-yellow { width: 10px; height: 10px; border-radius: 50%; background: #FFBD2E; }
+    .dot-green { width: 10px; height: 10px; border-radius: 50%; background: #28CA41; }
+
+    .ui-card-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+
+    .ui-card-body {
+      padding: 20px;
+    }
+
+    /* Main app mockup */
+    .app-sidebar {
+      width: 200px;
+      background: var(--bg-surface);
+      padding: 20px;
+      border-right: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .app-main {
+      flex: 1;
+      padding: 20px;
+      min-height: 320px;
+    }
+
+    .app-layout {
+      display: flex;
+      height: 340px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-deep);
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 2px;
+    }
+
+    .sidebar-item.active {
+      background: rgba(123,95,255,0.15);
+      color: var(--text-bright);
+    }
+
+    .sidebar-item-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .sidebar-section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-ghost);
+      padding: 12px 10px 6px;
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 80px;
+      margin-bottom: 16px;
+    }
+
+    .chart-bar {
+      flex: 1;
+      background: linear-gradient(to top, var(--accent-violet), rgba(123,95,255,0.3));
+      border-radius: 3px 3px 0 0;
+      transition: height 0.3s;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .metric-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .metric-value {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-bright);
+      letter-spacing: -0.03em;
+    }
+
+    .metric-value.green { color: var(--accent-mint); }
+    .metric-value.coral { color: var(--accent-coral); }
+
+    .app-main-header {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-body);
+      letter-spacing: -0.01em;
+      margin-bottom: 14px;
+    }
+
+    /* Floating badges on hero visual */
+    .float-badge {
+      position: absolute;
+      background: var(--bg-float);
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 5;
+    }
+
+    .float-badge-top {
+      top: -20px;
+      right: -30px;
+      animation: float-1 5s ease-in-out infinite;
+    }
+
+    .float-badge-bottom {
+      bottom: 30px;
+      left: -40px;
+      animation: float-2 6s ease-in-out infinite;
+    }
+
+    @keyframes float-1 {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes float-2 {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(8px); }
+    }
+
+    .float-badge-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .float-badge-text {
+      font-size: 12px;
+    }
+
+    .float-badge-text .label {
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 1px;
+    }
+
+    .float-badge-text .value {
+      font-weight: 600;
+      color: var(--text-bright);
+      display: block;
+    }
+
+    /* Hero bottom number strip */
+    .hero-stats-strip {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--border-subtle);
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero-stat {
+      padding: 28px 40px;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .hero-stat:last-child { border-right: none; }
+
+    .hero-stat-number {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--text-bright);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .hero-stat-number span {
+      color: var(--accent-mint);
+    }
+
+    .hero-stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* ─────────────────── MARQUEE ─────────────────── */
+    .marquee-section {
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 0;
+      background: var(--bg-deep);
+      overflow: hidden;
+    }
+
+    .marquee-track {
+      display: flex;
+      gap: 0;
+      animation: marquee 30s linear infinite;
+      width: max-content;
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .marquee-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 32px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .marquee-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent-mint);
+    }
+
+    /* ─────────────────── FEATURES BENTO ─────────────────── */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent-mint);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent-mint);
+    }
+
+    .section-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(28px, 3.5vw, 48px);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+      color: var(--text-bright);
+    }
+
+    .section-subtitle {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text-body);
+      max-width: 480px;
+      font-weight: 300;
+    }
+
+    .bento-section {
+      padding: 100px 60px;
+      position: relative;
+    }
+
+    .bento-header {
+      max-width: 640px;
+      margin-bottom: 60px;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+    }
+
+    .bento-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-vivid);
+      transform: translateY(-2px);
+    }
+
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 0%, rgba(123,95,255,0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .bento-card.featured {
+      grid-row: 1 / 3;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bento-card.featured::before {
+      background: radial-gradient(circle at 60% 0%, rgba(61,255,176,0.08) 0%, transparent 60%);
+    }
+
+    .bento-card-number {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-ghost);
+      letter-spacing: 0.08em;
+      margin-bottom: 24px;
+    }
+
+    .bento-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-shrink: 0;
+    }
+
+    .icon-violet { background: rgba(123,95,255,0.15); color: var(--accent-violet); }
+    .icon-mint { background: rgba(61,255,176,0.12); color: var(--accent-mint); }
+    .icon-coral { background: rgba(255,77,109,0.12); color: var(--accent-coral); }
+    .icon-gold { background: rgba(255,184,48,0.12); color: var(--accent-gold); }
+
+    .bento-card-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-bright);
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .bento-card-desc {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    .bento-visual {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      margin-top: 32px;
+    }
+
+    .bento-tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 28px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid;
+      letter-spacing: 0.02em;
+    }
+
+    .tag-violet { background: rgba(123,95,255,0.10); border-color: rgba(123,95,255,0.30); color: #A38BFF; }
+    .tag-mint { background: rgba(61,255,176,0.08); border-color: rgba(61,255,176,0.25); color: var(--accent-mint); }
+    .tag-coral { background: rgba(255,77,109,0.08); border-color: rgba(255,77,109,0.25); color: #FF8095; }
+
+    /* Fake component inside bento featured */
+    .mini-ui {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      flex: 1;
+      width: 100%;
+    }
+
+    .mini-ui-header {
+      padding: 10px 14px;
+      background: var(--bg-float);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-ui-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .mini-layer-list {
+      padding: 8px;
+    }
+
+    .mini-layer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 2px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .mini-layer.selected {
+      background: rgba(123,95,255,0.15);
+      color: var(--text-bright);
+    }
+
+    .mini-layer-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .mini-prop-grid {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .mini-prop {
+      background: var(--bg-deep);
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+
+    .mini-prop-label {
+      font-size: 9px;
+      color: var(--text-ghost);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+
+    .mini-prop-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-body);
+    }
+
+    /* ─────────────────── SOCIAL PROOF ─────────────────── */
+    .social-section {
+      padding: 100px 60px;
+      background: var(--bg-deep);
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .social-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 80px;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .social-left .section-label { margin-bottom: 20px; }
+
+    .social-big-quote {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(28px, 3vw, 44px);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.04em;
+      color: var(--text-bright);
+      margin-bottom: 32px;
+    }
+
+    .social-big-quote em {
+      font-style: normal;
+      color: var(--accent-mint);
+    }
+
+    .social-desc {
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--text-body);
+      max-width: 380px;
+      font-weight: 300;
+      margin-bottom: 40px;
+    }
+
+    .testimonial-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .testimonial-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+
+    .testimonial-card:hover { border-color: var(--border-medium); }
+
+    .testimonial-card.large { grid-column: 1 / -1; }
+
+    .testimonial-text {
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text-body);
+      font-weight: 300;
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .testimonial-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-mint));
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #050508;
+    }
+
+    .testimonial-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-bright);
+      display: block;
+    }
+
+    .testimonial-role {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .stars {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+
+    .star {
+      color: var(--accent-gold);
+      font-size: 11px;
+    }
+
+    /* ─────────────────── PRODUCT SHOWCASE ─────────────────── */
+    .showcase-section {
+      padding: 100px 60px;
+      position: relative;
+    }
+
+    .showcase-inner {
+      display: grid;
+      grid-template-columns: 1fr 1.8fr;
+      gap: 80px;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .showcase-text .section-title { margin-bottom: 20px; }
+
+    .showcase-text .section-subtitle { margin-bottom: 36px; }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feature-list-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-body);
+    }
+
+    .feature-list-item::before {
+      content: '';
+      display: flex;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(61,255,176,0.12);
+      border: 1px solid rgba(61,255,176,0.30);
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='8' viewBox='0 0 10 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 4L3.5 6.5L9 1' stroke='%233DFFB0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      flex-shrink: 0;
+    }
+
+    .showcase-screen {
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 60px 120px rgba(0,0,0,0.7);
+      background: var(--bg-elevated);
+      position: relative;
+    }
+
+    .screen-header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .screen-dots { display: flex; gap: 6px; }
+
+    .screen-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-elevated);
+      padding: 4px 12px;
+      border-radius: 6px;
+    }
+
+    .screen-body {
+      display: flex;
+      height: 360px;
+    }
+
+    .screen-sidebar {
+      width: 180px;
+      background: var(--bg-deep);
+      border-right: 1px solid var(--border-subtle);
+      padding: 16px;
+      flex-shrink: 0;
+    }
+
+    .screen-content {
+      flex: 1;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .nav-item-s {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .nav-item-s.active {
+      background: rgba(123,95,255,0.12);
+      color: var(--accent-violet);
+    }
+
+    .nav-item-s svg { opacity: 0.7; flex-shrink: 0; }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .content-card-s {
+      background: var(--bg-deep);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .content-card-s .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .content-card-s .val {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--text-bright);
+    }
+
+    .content-card-s .val.mint { color: var(--accent-mint); }
+
+    .activity-list {
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 11px;
+    }
+
+    .activity-item:last-child { border-bottom: none; }
+
+    .activity-dot-s {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .activity-name { color: var(--text-body); flex: 1; }
+    .activity-time { color: var(--text-ghost); font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+    .activity-status {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+    .status-done { background: rgba(61,255,176,0.12); color: var(--accent-mint); }
+    .status-prog { background: rgba(255,184,48,0.12); color: var(--accent-gold); }
+
+    /* ─────────────────── FEATURES ZIGZAG ─────────────────── */
+    .features-detail {
+      padding: 60px 60px 100px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .features-detail-header {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 80px;
+    }
+
+    .features-detail-header .section-label {
+      justify-content: center;
+    }
+
+    .features-detail-header .section-label::before { display: none; }
+    .features-detail-header .section-label::after {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent-mint);
+    }
+
+    .zigzag-feature {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto 80px;
+      padding-bottom: 80px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .zigzag-feature:last-child { border-bottom: none; margin-bottom: 0; }
+
+    .zigzag-feature.reverse { direction: rtl; }
+    .zigzag-feature.reverse > * { direction: ltr; }
+
+    .zigzag-text .section-label { margin-bottom: 20px; }
+    .zigzag-text .section-title { font-size: clamp(24px, 2.5vw, 36px); margin-bottom: 18px; }
+    .zigzag-text .section-subtitle { font-size: 15px; margin-bottom: 28px; }
+
+    .mini-stat-row {
+      display: flex;
+      gap: 24px;
+    }
+
+    .mini-stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mini-stat-num {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--text-bright);
+    }
+
+    .mini-stat-num em {
+      font-style: normal;
+      color: var(--accent-mint);
+    }
+
+    .mini-stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .feature-visual {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    }
+
+    .feature-visual-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+      flex-shrink: 0;
+    }
+
+    .feature-visual-body {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Variants visual */
+    .variants-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      flex: 1;
+    }
+
+    .variant-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .variant-item:hover { border-color: var(--accent-violet); }
+    .variant-item.selected { border-color: var(--accent-violet); box-shadow: 0 0 0 2px rgba(123,95,255,0.2); }
+
+    .variant-swatch {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .variant-label {
+      padding: 6px 8px;
+      font-size: 10px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+
+    /* ─────────────────── FAQ ─────────────────── */
+    .faq-section {
+      padding: 100px 60px;
+      background: var(--bg-deep);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .faq-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 80px;
+    }
+
+    .faq-left .section-title { margin-bottom: 20px; }
+    .faq-left .section-subtitle { margin-bottom: 36px; }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-body);
+      background: none;
+      border: 1px solid var(--border-medium);
+      cursor: pointer;
+      padding: 12px 22px;
+      border-radius: 10px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-outline:hover { color: var(--text-bright); border-color: var(--border-vivid); background: rgba(255,255,255,0.04); }
+
+    .faq-right { display: flex; flex-direction: column; }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 24px 0;
+      cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-bright);
+      transition: color 0.2s;
+    }
+
+    .faq-question:hover { color: var(--text-bright); }
+
+    .faq-icon {
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--border-medium);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      color: var(--text-muted);
+    }
+
+    .faq-item.open .faq-icon {
+      border-color: var(--accent-mint);
+      color: var(--accent-mint);
+      background: rgba(61,255,176,0.08);
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .faq-item.open .faq-answer {
+      max-height: 300px;
+    }
+
+    .faq-answer-inner {
+      padding: 0 0 24px;
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text-muted);
+      font-weight: 300;
+      max-width: 560px;
+    }
+
+    /* ─────────────────── FOOTER CTA ─────────────────── */
+    .cta-section {
+      padding: 100px 60px;
+      position: relative;
+      overflow: hidden;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .cta-bg {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(123,95,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-inner {
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-inner .section-label { justify-content: center; }
+    .cta-inner .section-label::before { display: none; }
+    .cta-inner .section-label::after {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--accent-mint);
+    }
+
+    .cta-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: var(--text-bright);
+      margin: 20px 0;
+    }
+
+    .cta-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent-violet), var(--accent-mint));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .cta-sub {
+      font-size: 16px;
+      color: var(--text-body);
+      line-height: 1.7;
+      margin-bottom: 48px;
+      font-weight: 300;
+    }
+
+    .cta-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .email-form {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      padding: 6px;
+    }
+
+    .email-input {
+      background: none;
+      border: none;
+      outline: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text-bright);
+      padding: 8px 14px;
+      width: 260px;
+    }
+
+    .email-input::placeholder { color: var(--text-muted); }
+
+    .btn-form-submit {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #05050A;
+      background: var(--accent-mint);
+      border: none;
+      cursor: pointer;
+      padding: 10px 22px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-form-submit:hover { background: #5AFFC3; }
+
+    .cta-note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-ghost);
+    }
+
+    /* ─────────────────── FOOTER ─────────────────── */
+    footer {
+      padding: 60px 60px 40px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+
+    .footer-brand-desc {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-muted);
+      margin-top: 16px;
+      max-width: 260px;
+      font-weight: 300;
+    }
+
+    .footer-col-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-body);
+      margin-bottom: 20px;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-links a {
+      font-size: 14px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.15s;
+      font-weight: 300;
+    }
+
+    .footer-links a:hover { color: var(--text-bright); }
+
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 28px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .footer-copyright {
+      font-size: 13px;
+      color: var(--text-ghost);
+    }
+
+    .footer-legal {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-legal a {
+      font-size: 13px;
+      color: var(--text-ghost);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-legal a:hover { color: var(--text-muted); }
+
+    /* ─────────────────── ENTRANCE ANIMATIONS ─────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-in {
+      opacity: 0;
+      animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+
+    .delay-1 { animation-delay: 0.15s; }
+    .delay-2 { animation-delay: 0.30s; }
+    .delay-3 { animation-delay: 0.45s; }
+    .delay-4 { animation-delay: 0.60s; }
+    .delay-5 { animation-delay: 0.75s; }
+
+    /* Progress bar in metric */
+    .progress-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--bg-deep);
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent-mint);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">
+        <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 3h5v5H3V3zm7 0h5v5h-5V3zm0 7h5v5h-5v-5zm-7 0h5v5H3v-5z" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <span class="nav-logo-text">Stirling Market Leads</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#">Solutions
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Resources
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <a href="#newsletter" class="btn-ghost" style="text-decoration:none">Sign In</a>
+      <a href="#newsletter" class="btn-primary" style="text-decoration:none">Sign Up →</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- Left -->
+    <div class="hero-left">
+      <div class="hero-badge animate-in">
+        <div class="hero-badge-dot"></div>
+        Introducing Stirling Market Leads 2.0
+      </div>
+
+      <h1 class="hero-headline animate-in delay-1">
+        AI design system<br>for <em>everything</em>
+      </h1>
+
+      <p class="hero-sub animate-in delay-2">
+        Connect different blocks and create stunning interfaces. The only design system tool that moves at the speed of thought.
+      </p>
+
+      <div class="hero-actions animate-in delay-3">
+        <a href="#newsletter" class="btn-hero-primary">
+          Start for free
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#showcase" class="btn-hero-secondary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 8a6 6 0 11-12 0 6 6 0 0112 0z" stroke="currentColor" stroke-width="1.3"/><path d="M10 8L6.5 6v4L10 8z" fill="currentColor"/></svg>
+          Watch demo
+        </a>
+      </div>
+
+      <div class="hero-social-proof animate-in delay-4">
+        <div class="avatar-stack">
+          <img src="https://placehold.co/34x34/7B5FFF/ffffff?text=A" alt="User">
+          <img src="https://placehold.co/34x34/3DFFB0/050508?text=B" alt="User">
+          <img src="https://placehold.co/34x34/FF4D6D/ffffff?text=C" alt="User">
+          <img src="https://placehold.co/34x34/FFB830/050508?text=D" alt="User">
+          <img src="https://placehold.co/34x34/7B5FFF/ffffff?text=E" alt="User">
+        </div>
+        <div class="social-proof-text">
+          <strong>12,000+</strong> designers & developers<br>already using Stirling Market Leads
+        </div>
+      </div>
+    </div>
+
+    <!-- Right -->
+    <div class="hero-right animate-in delay-2">
+      <div class="hero-visual-frame">
+
+        <!-- Floating badge top right -->
+        <div class="float-badge float-badge-top">
+          <div class="float-badge-icon icon-mint">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 10l4-4 3 3 5-6" stroke="#3DFFB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="float-badge-text">
+            <span class="label">Design velocity</span>
+            <span class="value">↑ 340% faster</span>
+          </div>
+        </div>
+
+        <!-- Main UI card -->
+        <div class="ui-card">
+          <div class="ui-card-header">
+            <div class="dot-red"></div>
+            <div class="dot-yellow"></div>
+            <div class="dot-green"></div>
+            <span class="ui-card-title">stirling-market-leads — dashboard.fig</span>
+          </div>
+          <div class="ui-card-body" style="padding:0">
+            <div class="app-layout">
+              <!-- Sidebar -->
+              <div class="app-sidebar">
+                <div class="sidebar-section-label">Workspace</div>
+                <div class="sidebar-item active">
+                  <div class="sidebar-item-dot" style="background:#7B5FFF"></div>
+                  Dashboard
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-dot"></div>
+                  Components
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-dot"></div>
+                  Variants
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-dot"></div>
+                  Prototypes
+                </div>
+                <div class="sidebar-section-label">Team</div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-dot"></div>
+                  Shared
+                </div>
+                <div class="sidebar-item">
+                  <div class="sidebar-item-dot"></div>
+                  Projects
+                </div>
+              </div>
+
+              <!-- Main Content -->
+              <div class="app-main">
+                <div class="app-main-header">Analytics Overview</div>
+                <div class="metric-row">
+                  <div class="metric-card">
+                    <div class="metric-label">Components</div>
+                    <div class="metric-value">2,840</div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:78%"></div></div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Coverage</div>
+                    <div class="metric-value green">94%</div>
+                    <div class="progress-bar"><div class="progress-fill" style="width:94%"></div></div>
+                  </div>
+                </div>
+                <div class="chart-bars">
+                  <div class="chart-bar" style="height:40%"></div>
+                  <div class="chart-bar" style="height:65%"></div>
+                  <div class="chart-bar" style="height:45%"></div>
+                  <div class="chart-bar" style="height:90%"></div>
+                  <div class="chart-bar" style="height:70%"></div>
+                  <div class="chart-bar" style="height:55%"></div>
+                  <div class="chart-bar" style="height:85%"></div>
+                  <div class="chart-bar" style="height:60%"></div>
+                </div>
+                <div class="metric-row">
+                  <div class="metric-card">
+                    <div class="metric-label">Team members</div>
+                    <div class="metric-value">12</div>
+                  </div>
+                  <div class="metric-card">
+                    <div class="metric-label">Builds today</div>
+                    <div class="metric-value coral">48</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating badge bottom left -->
+        <div class="float-badge float-badge-bottom">
+          <div class="float-badge-icon icon-violet">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="#A38BFF"/><rect x="9" y="2" width="5" height="5" rx="1" fill="#A38BFF" opacity="0.5"/><rect x="2" y="9" width="5" height="5" rx="1" fill="#A38BFF" opacity="0.5"/><rect x="9" y="9" width="5" height="5" rx="1" fill="#A38BFF"/></svg>
+          </div>
+          <div class="float-badge-text">
+            <span class="label">Auto-synced variants</span>
+            <span class="value" style="color:#A38BFF">Live preview</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="hero-stats-strip">
+      <div class="hero-stat">
+        <span class="hero-stat-number">12k<span>+</span></span>
+        <span class="hero-stat-label">Active users globally</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-number">94<span>%</span></span>
+        <span class="hero-stat-label">Design coverage achieved</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-number">3.4x</span>
+        <span class="hero-stat-label">Faster than competitors</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat-number">∞</span>
+        <span class="hero-stat-label">Component combinations</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-section">
+    <div class="marquee-track">
+      <!-- First set -->
+      <div class="marquee-item"><div class="marquee-dot"></div>Design Tokens</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Component Library</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Real-time Sync</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Auto-generated Docs</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Variant Explorer</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Prototype Testing</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>AI Suggestions</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Multi-platform Export</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Figma Integration</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Team Collaboration</div>
+      <!-- Duplicate set -->
+      <div class="marquee-item"><div class="marquee-dot"></div>Design Tokens</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Component Library</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Real-time Sync</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Auto-generated Docs</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Variant Explorer</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Prototype Testing</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>AI Suggestions</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Multi-platform Export</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Figma Integration</div>
+      <div class="marquee-item"><div class="marquee-dot"></div>Team Collaboration</div>
+    </div>
+  </div>
+
+  <!-- BENTO FEATURES -->
+  <section class="bento-section">
+    <div class="bento-header">
+      <div class="section-label">Platform Features</div>
+      <h2 class="section-title" style="margin-bottom:16px">Move fast, stay <em style="font-style:normal;color:var(--accent-mint)">aligned</em>,<br>and build better — together</h2>
+      <p class="section-subtitle">Create a powers style in your Figma. Yes, it just takes a few minutes.</p>
+    </div>
+
+    <div class="bento-grid">
+
+      <!-- Featured large card -->
+      <div class="bento-card featured">
+        <div class="bento-card-number">01 / Feature</div>
+        <div class="bento-card-icon icon-violet">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 7h16M3 11h10M3 15h6" stroke="#A38BFF" stroke-width="1.5" stroke-linecap="round"/><circle cx="18" cy="13" r="3" stroke="#A38BFF" stroke-width="1.5"/></svg>
+        </div>
+        <h3 class="bento-card-title">Work Together<br>Seamlessly</h3>
+        <p class="bento-card-desc">Stirling Market Leads gives you all the tools you need for a collaborative design experience. Real-time cursors, comments, and live component sync.</p>
+
+        <div class="bento-visual">
+          <div class="mini-ui" style="flex:1">
+            <div class="mini-ui-header">
+              <div class="dot-red"></div><div class="dot-yellow"></div><div class="dot-green"></div>
+              <span class="mini-ui-title">Layers Panel</span>
+            </div>
+            <div class="mini-layer-list">
+              <div class="mini-layer selected">
+                <div class="mini-layer-swatch" style="background:linear-gradient(135deg,#7B5FFF,#3DFFB0)"></div>
+                Header Component
+              </div>
+              <div class="mini-layer">
+                <div class="mini-layer-swatch" style="background:#FF4D6D"></div>
+                Navigation Bar
+              </div>
+              <div class="mini-layer">
+                <div class="mini-layer-swatch" style="background:#FFB830"></div>
+                Hero Section
+              </div>
+              <div class="mini-layer">
+                <div class="mini-layer-swatch" style="background:#3DFFB0"></div>
+                Feature Cards
+              </div>
+              <div class="mini-layer">
+                <div class="mini-layer-swatch" style="background:rgba(120,110,200,0.3)"></div>
+                Footer Block
+              </div>
+            </div>
+            <div class="mini-prop-grid">
+              <div class="mini-prop">
+                <div class="mini-prop-label">Width</div>
+                <div class="mini-prop-value">1440px</div>
+              </div>
+              <div class="mini-prop">
+                <div class="mini-prop-label">Height</div>
+                <div class="mini-prop-value">auto</div>
+              </div>
+              <div class="mini-prop">
+                <div class="mini-prop-label">Fill</div>
+                <div class="mini-prop-value" style="color:#A38BFF">#7B5FFF</div>
+              </div>
+              <div class="mini-prop">
+                <div class="mini-prop-label">Corner</div>
+                <div class="mini-prop-value">12</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento-tag-row">
+          <span class="tag tag-violet">Real-time</span>
+          <span class="tag tag-mint">Collaborative</span>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="bento-card">
+        <div class="bento-card-number">02 / Feature</div>
+        <div class="bento-card-icon icon-mint">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#3DFFB0" stroke-width="1.5"/><rect x="12" y="3" width="7" height="7" rx="1.5" stroke="#3DFFB0" stroke-width="1.5" opacity="0.5"/><rect x="3" y="12" width="7" height="7" rx="1.5" stroke="#3DFFB0" stroke-width="1.5" opacity="0.5"/><rect x="12" y="12" width="7" height="7" rx="1.5" stroke="#3DFFB0" stroke-width="1.5"/></svg>
+        </div>
+        <h3 class="bento-card-title">Create Variants</h3>
+        <p class="bento-card-desc">Maintain design consistency with assets and styles across all your projects and platforms automatically.</p>
+        <div class="bento-tag-row">
+          <span class="tag tag-mint">Auto-sync</span>
+          <span class="tag tag-coral">∞ variants</span>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="bento-card">
+        <div class="bento-card-number">03 / Feature</div>
+        <div class="bento-card-icon icon-coral">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 16l5-5 3 3 6-8" stroke="#FF8095" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="3" width="16" height="16" rx="2.5" stroke="#FF8095" stroke-width="1.5"/></svg>
+        </div>
+        <h3 class="bento-card-title">Prototyping UI</h3>
+        <p class="bento-card-desc">Make ultra high-fidelity mockups and prototypes with AI-powered layout suggestions.</p>
+        <div class="bento-tag-row">
+          <span class="tag tag-coral">AI-powered</span>
+          <span class="tag tag-violet">Fidelity</span>
+        </div>
+      </div>
+
+      <!-- Card 4 — spans 2 cols -->
+      <div class="bento-card" style="grid-column: 2 / 4;">
+        <div class="bento-card-number">04 / Integration</div>
+        <div style="display:flex;align-items:flex-start;gap:32px;">
+          <div style="flex:1">
+            <div class="bento-card-icon icon-gold">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3v4M11 15v4M3 11h4M15 11h4M5.6 5.6l2.8 2.8M13.6 13.6l2.8 2.8M16.4 5.6l-2.8 2.8M8.4 13.6l-2.8 2.8" stroke="#FFB830" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+            <h3 class="bento-card-title">AI-Powered Assistant</h3>
+            <p class="bento-card-desc">Generate entire design systems from a text prompt. Stirling Market Leads's AI understands design language and produces production-ready components instantly.</p>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:10px;padding:12px;">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;font-family:'JetBrains Mono',monospace">AI Prompt</div>
+              <div style="font-size:12px;color:var(--text-body);font-style:italic">"Create a dark SaaS dashboard with a sidebar nav, data cards, and chart area"</div>
+            </div>
+            <div style="text-align:center;font-size:18px;color:var(--accent-gold)">↓</div>
+            <div style="background:rgba(255,184,48,0.08);border:1px solid rgba(255,184,48,0.25);border-radius:10px;padding:12px;">
+              <div style="font-size:11px;color:var(--accent-gold);margin-bottom:6px;font-family:'JetBrains Mono',monospace">Generated in 2.3s</div>
+              <div style="font-size:12px;color:var(--text-body)">48 components · 12 screens · Full token set</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SOCIAL PROOF -->
+  <section class="social-section">
+    <div class="social-inner">
+      <div class="social-left">
+        <div class="section-label">Community</div>
+        <h2 class="social-big-quote">We've got lots of friends <em>around the world</em></h2>
+        <p class="social-desc">This resource consists of awesome versions for a landing page template based on components. Join thousands of design teams already shipping faster.</p>
+
+        <div style="display:flex;gap:16px;margin-top:8px">
+          <div style="text-align:center">
+            <div style="font-family:'Unbounded',sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.04em;color:var(--text-bright)">180<span style="color:var(--accent-mint)">+</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Countries</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'Unbounded',sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.04em;color:var(--text-bright)">4.9<span style="color:var(--accent-gold)">★</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Avg rating</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'Unbounded',sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.04em;color:var(--text-bright)">99<span style="color:var(--accent-coral)">%</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Satisfaction</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonial-grid">
+        <div class="testimonial-card large">
+          <div class="stars">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <p class="testimonial-text">"It lets you to simply create amazing designs, just try it. I was building a landing page template and Stirling Market Leads cut my design time by more than half. The AI suggestions are actually good."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">LH</div>
+            <div>
+              <span class="testimonial-name">Lauri Hughes</span>
+              <span class="testimonial-role">Lead Designer at Vercel</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <div class="stars">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <p class="testimonial-text">"The variant system alone is worth the price. Nothing compares for scaling a design system."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar" style="background:linear-gradient(135deg,#FF4D6D,#FFB830)">MR</div>
+            <div>
+              <span class="testimonial-name">Marcus Rivera</span>
+              <span class="testimonial-role">Head of Design, Stripe</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="testimonial-card">
+          <div class="stars">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <p class="testimonial-text">"Our entire team switched in one week. The learning curve is nearly zero."</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar" style="background:linear-gradient(135deg,#3DFFB0,#7B5FFF)">AP</div>
+            <div>
+              <span class="testimonial-name">Aisha Patel</span>
+              <span class="testimonial-role">Product Design Lead, Figma</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCT SHOWCASE -->
+  <section class="showcase-section" id="showcase">
+    <div class="showcase-inner">
+      <div class="showcase-text">
+        <div class="section-label">Dashboard</div>
+        <h2 class="section-title">Use Stirling Market Leads to simplify building and maintaining layouts.</h2>
+        <p class="section-subtitle" style="margin-bottom:32px">Coordinate with your team and push projects forward with Stirling Market Leads. Everything you need in one unified workspace.</p>
+
+        <ul class="feature-list">
+          <li class="feature-list-item">Real-time multiplayer editing</li>
+          <li class="feature-list-item">Smart component auto-layout</li>
+          <li class="feature-list-item">Version history and branching</li>
+          <li class="feature-list-item">Cross-platform design tokens</li>
+          <li class="feature-list-item">One-click handoff to developers</li>
+        </ul>
+      </div>
+
+      <div class="showcase-screen">
+        <div class="screen-header">
+          <div class="screen-dots">
+            <div class="dot-red"></div>
+            <div class="dot-yellow"></div>
+            <div class="dot-green"></div>
+          </div>
+          <div class="screen-url">app.stirling-market-leads.io/dashboard</div>
+          <div style="width:60px"></div>
+        </div>
+        <div class="screen-body">
+          <div class="screen-sidebar">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Navigation</div>
+            <div class="nav-item-s active">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor"/><rect x="7" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.4"/><rect x="1" y="7" width="5" height="5" rx="1" fill="currentColor" opacity="0.4"/><rect x="7" y="7" width="5" height="5" rx="1" fill="currentColor"/></svg>
+              Dashboard
+            </div>
+            <div class="nav-item-s">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 2h9M2 6h6M2 10h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              Messages
+            </div>
+            <div class="nav-item-s">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M4 1v3M9 1v3M1.5 5h10M2 3h9a1 1 0 011 1v6.5a1 1 0 01-1 1H2a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.1"/></svg>
+              Projects
+            </div>
+            <div class="nav-item-s">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 3.5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              Timeline
+            </div>
+            <div class="nav-item-s">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 11.5c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              Profile
+            </div>
+          </div>
+
+          <div class="screen-content">
+            <div style="font-family:'Unbounded',sans-serif;font-size:11px;font-weight:600;color:var(--text-body);margin-bottom:12px;letter-spacing:-0.01em">Overview</div>
+            <div class="content-grid">
+              <div class="content-card-s">
+                <div class="label">Designs</div>
+                <div class="val">248</div>
+              </div>
+              <div class="content-card-s">
+                <div class="label">Published</div>
+                <div class="val mint">94%</div>
+              </div>
+              <div class="content-card-s">
+                <div class="label">Team</div>
+                <div class="val">12</div>
+              </div>
+            </div>
+
+            <div class="activity-list">
+              <div class="activity-item">
+                <div class="activity-dot-s" style="background:var(--accent-mint)"></div>
+                <span class="activity-name">Dashboard Component — exported</span>
+                <span class="activity-time">2m ago</span>
+                <span class="activity-status status-done">Done</span>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot-s" style="background:var(--accent-gold)"></div>
+                <span class="activity-name">Variant set — building</span>
+                <span class="activity-time">5m ago</span>
+                <span class="activity-status status-prog">Active</span>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot-s" style="background:var(--accent-mint)"></div>
+                <span class="activity-name">Landing page — shipped</span>
+                <span class="activity-time">12m ago</span>
+                <span class="activity-status status-done">Done</span>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot-s" style="background:var(--accent-coral)"></div>
+                <span class="activity-name">Mobile tokens — review needed</span>
+                <span class="activity-time">18m ago</span>
+                <span class="activity-status" style="background:rgba(255,77,109,0.12);color:#FF8095;font-size:10px;padding:2px 8px;border-radius:100px">Review</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES ZIGZAG -->
+  <section class="features-detail">
+    <div class="features-detail-header">
+      <div class="section-label">Deep Dive</div>
+      <h2 class="section-title" style="margin-bottom:12px">Build better products<br>and prototypes</h2>
+      <p class="section-subtitle" style="text-align:center;max-width:520px;margin:0 auto">Stirling Market Leads gives you all the tools you need. Featuring a versatile range of elements including buttons, forms, headers, and more.</p>
+    </div>
+
+    <!-- Feature 1 -->
+    <div class="zigzag-feature">
+      <div class="zigzag-text">
+        <div class="section-label">Design System</div>
+        <h3 class="section-title">Build mockups,<br>and implement!</h3>
+        <p class="section-subtitle">Featuring a versatile range of elements including buttons, forms, headers, and more. Stirling Market Leads makes it easy to customize your landing page to suit your brand's unique style.</p>
+        <div class="mini-stat-row" style="margin-top:28px">
+          <div class="mini-stat">
+            <span class="mini-stat-num">2.8k<em>+</em></span>
+            <span class="mini-stat-label">Components ready</span>
+          </div>
+          <div class="mini-stat">
+            <span class="mini-stat-num">54<em>+</em></span>
+            <span class="mini-stat-label">Layout templates</span>
+          </div>
+        </div>
+      </div>
+      <div class="feature-visual">
+        <div class="feature-visual-header">
+          <div class="dot-red"></div><div class="dot-yellow"></div><div class="dot-green"></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);margin-left:6px">Design System — v2.4.1</span>
+        </div>
+        <div class="feature-visual-body">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">Variants</div>
+          <div class="variants-grid">
+            <div class="variant-item selected">
+              <div class="variant-swatch" style="background:linear-gradient(135deg,#7B5FFF,#3DFFB0)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="10" width="18" height="4" rx="2" fill="rgba(255,255,255,0.8)"/></svg>
+              </div>
+              <div class="variant-label">Primary</div>
+            </div>
+            <div class="variant-item">
+              <div class="variant-swatch" style="background:rgba(61,255,176,0.12);border:1px solid rgba(61,255,176,0.3)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="10" width="18" height="4" rx="2" fill="rgba(61,255,176,0.8)"/></svg>
+              </div>
+              <div class="variant-label">Ghost</div>
+            </div>
+            <div class="variant-item">
+              <div class="variant-swatch" style="background:rgba(255,77,109,0.12);border:1px solid rgba(255,77,109,0.3)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="10" width="18" height="4" rx="2" fill="rgba(255,77,109,0.8)"/></svg>
+              </div>
+              <div class="variant-label">Danger</div>
+            </div>
+            <div class="variant-item">
+              <div class="variant-swatch" style="background:rgba(255,184,48,0.12);border:1px solid rgba(255,184,48,0.3)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="10" width="18" height="4" rx="2" fill="rgba(255,184,48,0.8)"/></svg>
+              </div>
+              <div class="variant-label">Warning</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1">
+            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;">
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Design System</div>
+              <div style="font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:var(--text-bright)">04</div>
+            </div>
+            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;">
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Prototypes</div>
+              <div style="font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:var(--accent-mint)">44</div>
+            </div>
+            <div style="background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;grid-column:1/-1">
+              <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Landing Pages</div>
+              <div style="font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:var(--accent-violet)">45</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section">
+    <div class="faq-inner">
+      <div class="faq-left">
+        <div class="section-label">FAQ</div>
+        <h2 class="section-title" style="margin-bottom:16px">Frequently Asked Questions</h2>
+        <p class="section-subtitle">Create smarter right in your Figma with Stirling Market Leads. Yes, it just takes a few minutes.</p>
+        <a href="#" class="btn-outline" style="margin-top:32px">See all questions →</a>
+      </div>
+
+      <div class="faq-right">
+
+        <div class="faq-item open">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            How long does it take to implement Stirling Market Leads?
+            <div class="faq-icon">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Getting started with Stirling Market Leads takes just minutes. Our guided setup wizard walks you through connecting your Figma account, importing your existing components, and configuring your first design tokens. Most teams are fully operational within a single afternoon.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            What kind of support does Stirling Market Leads offer?
+            <div class="faq-icon">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              We provide 24/7 live chat support, an extensive knowledge base, video tutorials, and a community forum. Pro and Enterprise plans include dedicated account managers and priority response times under 2 hours.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            How will I be billed for Stirling Market Leads?
+            <div class="faq-icon">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Stirling Market Leads offers monthly and annual billing. Annual plans come with a 30% discount. You can upgrade, downgrade, or cancel at any time. We accept all major credit cards and support invoice billing for Enterprise customers.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            How is Stirling Market Leads different than other UI kits?
+            <div class="faq-icon">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Unlike static UI kits, Stirling Market Leads is a living, AI-powered design system. It adapts to your brand, maintains consistency automatically, syncs across your entire team in real time, and generates new components on demand.
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question" onclick="toggleFaq(this)">
+            How do I change my account email?
+            <div class="faq-icon">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              Navigate to Settings → Account → Email address. Enter your new email and confirm it from the verification link we send. The change takes effect immediately after verification.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section class="cta-section" id="newsletter">
+    <div class="cta-bg"></div>
+    <div class="cta-inner">
+      <div class="section-label">Get Started</div>
+      <h2 class="cta-title">Ready to build <em>faster</em>?</h2>
+      <p class="cta-sub">Subscribe to our newsletter for the latest updates and be first to access new features.</p>
+      <div class="cta-actions">
+        <form class="email-form" onsubmit="handleSubscribe(event)">
+          <input type="email" class="email-input" placeholder="Enter your email address" required>
+          <button type="submit" class="btn-form-submit">Subscribe →</button>
+        </form>
+      </div>
+      <p class="cta-note">No spam. Unsubscribe anytime. Join 12,000+ designers.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-grid">
+      <div>
+        <a href="#" class="nav-logo" style="margin-bottom:0">
+          <div class="nav-logo-icon">
+            <svg viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 3h5v5H3V3zm7 0h5v5h-5V3zm0 7h5v5h-5v-5zm-7 0h5v5H3v-5z" fill="white" opacity="0.9"/>
+            </svg>
+          </div>
+          <span class="nav-logo-text">Stirling Market Leads</span>
+        </a>
+        <p class="footer-brand-desc">The AI-powered design system for teams who ship fast. Build, collaborate, and iterate without friction.</p>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Product</div>
+        <ul class="footer-links">
+          <li><a href="#">Solutions</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Changelog</a></li>
+          <li><a href="#">Roadmap</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Resources</div>
+        <ul class="footer-links">
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Community</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Status</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Company</div>
+        <ul class="footer-links">
+          <li><a href="#">About</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+          <li><a href="#">Partners</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span class="footer-copyright">© Stirling Market Leads 2024 All rights reserved</span>
+      <div class="footer-legal">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Cookie Policy</a>
+      </div>
+    </div>
+  </footer>
+
+  <style>
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: var(--bg-float);
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-bright);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      z-index: 10000;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
+
+  <div class="toast" id="toast">
+    <div class="toast-icon icon-mint">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7l3.5 3.5L12 3" stroke="#3DFFB0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <span id="toast-msg">Done!</span>
+  </div>
+
+  <script>
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function handleSubscribe(e) {
+      e.preventDefault();
+      const input = e.target.querySelector('input[type="email"]');
+      showToast('You\'re on the list! We\'ll be in touch soon.');
+      input.value = '';
+    }
+
+    function toggleFaq(btn) {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      // Close all
+      document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+      // Open clicked if it was closed
+      if (!isOpen) item.classList.add('open');
+    }
+
+    // Subtle entrance for sections
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.bento-card, .testimonial-card, .zigzag-feature, .faq-item').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1)';
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>

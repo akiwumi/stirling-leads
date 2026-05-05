@@ -1,21 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowRight, BarChart3, Download, Search, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkspaceBanner, WorkspaceHero, WorkspaceMetricCard, WorkspacePill, workspaceCardClass, workspaceInsetClass } from "@/components/workspace-theme";
 import { createClient } from "@/lib/supabase/server";
 
-import { clearCompanies, createCompany, searchCompanies, signOut } from "./actions";
+import { clearCompanies, createCompany } from "./actions";
 
 const errorMessages: Record<string, string> = {
   clear_confirmation_required: 'Type "CLEAR" before deleting the company list.',
   company_create_failed: "Could not save the company.",
   company_name_required: "Company name is required.",
-  missing_serpapi_key: "Add SERPAPI_KEY to your environment before using lead search.",
-  search_failed: "Search provider request failed.",
-  search_fields_required: "Enter both niche and location.",
 };
 
 export default async function DashboardPage({
@@ -44,129 +43,152 @@ export default async function DashboardPage({
   const displayName = profile?.full_name || user.email || "Stirling user";
   const companyName = profile?.company_name || "Stirling QR";
   const errorMessage = params.error ? errorMessages[params.error] : null;
+  const recentCompanies = companies ?? [];
 
   return (
-    <main className="min-h-screen px-6 py-8 lg:px-10">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col gap-4 rounded-[2rem] border bg-white/80 p-6 backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Lead CRM</p>
-            <h1 className="mt-2 text-3xl font-semibold">{companyName}</h1>
-            <p className="mt-2 text-[var(--muted-foreground)]">Signed in as {displayName}. Lead discovery, scoring, demos, drafting, sending, and tracking now live in one workflow.</p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link href="/dashboard/outreach">
-              <Button variant="outline">Open outreach</Button>
-            </Link>
-            <form action={signOut}>
-              <Button variant="outline" type="submit">
-                Sign out
+    <main className="space-y-8">
+      <WorkspaceHero
+        actions={
+          <>
+            <Link href="/dashboard/analytics">
+              <Button className="rounded-full bg-white/85 text-slate-800 hover:bg-white" type="button" variant="outline">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                View analytics
               </Button>
-            </form>
-          </div>
-        </header>
+            </Link>
+            <Link href="/dashboard/outreach">
+              <Button className="rounded-full" type="button">
+                Open outreach
+              </Button>
+            </Link>
+          </>
+        }
+        description={`Signed in as ${displayName}. Search real company websites, score fit, generate demos, and move the best sectors into outreach without leaving the workspace.`}
+        eyebrow="Lead command center"
+        title={companyName}
+        tone="lavender"
+      />
 
-        {errorMessage ? <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</p> : null}
-        {params.search ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Search saved for: {params.search}</p> : null}
-        {params.cleared === "done" ? <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Company list cleared.</p> : null}
+      {errorMessage ? <WorkspaceBanner text={errorMessage} tone="error" /> : null}
+      {params.search ? <WorkspaceBanner text={`Search saved for: ${params.search}`} tone="success" /> : null}
+      {params.cleared === "done" ? <WorkspaceBanner text="Company list cleared." tone="success" /> : null}
 
-        <section className="grid gap-5 md:grid-cols-3">
-          <DashboardCard title="Companies" value={String(companyCount ?? 0)} description="Manual and search-imported leads." />
-          <DashboardCard title="Drafts" value={String(draftCount ?? 0)} description="Generated outreach drafts awaiting review or already sent." />
-          <DashboardCard title="Sends" value={String(sendCount ?? 0)} description="Tracked outreach events across campaigns." />
-        </section>
+      <section className="grid gap-5 md:grid-cols-3">
+        <DashboardCard icon={<Sparkles className="h-4 w-4" />} title="Companies" value={String(companyCount ?? 0)} description="Manual and search-imported leads now tracked in one place." />
+        <DashboardCard icon={<Search className="h-4 w-4" />} title="Drafts" value={String(draftCount ?? 0)} description="Generated outreach drafts waiting for review or already sent." />
+        <DashboardCard icon={<BarChart3 className="h-4 w-4" />} title="Sends" value={String(sendCount ?? 0)} description="Tracked outreach activity across campaigns and categories." />
+      </section>
 
-        <section className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
+      <section className="grid gap-6 xl:grid-cols-[0.72fr_1.28fr]">
           <div className="space-y-6">
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Add company</CardTitle>
-                <CardDescription>Manual lead entry for the CRM workflow in Phase 2.</CardDescription>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Add company</CardTitle>
+                <CardDescription>Manual lead entry for warm opportunities you already know you want to track.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form action={createCompany} className="grid gap-3">
-                  <Input name="name" placeholder="Business name" required />
-                  <Input name="websiteUrl" placeholder="Website URL" />
+                  <Input className="border-white/70 bg-white/80" name="name" placeholder="Business name" required />
+                  <Input className="border-white/70 bg-white/80" name="websiteUrl" placeholder="Website URL" />
                   <div className="grid gap-3 md:grid-cols-2">
-                    <Input name="industry" placeholder="Industry" />
-                    <Input name="status" placeholder="Status" defaultValue="new" />
-                    <Input name="city" placeholder="City" />
-                    <Input name="country" placeholder="Country" defaultValue="Sweden" />
+                    <Input className="border-white/70 bg-white/80" name="industry" placeholder="Industry" />
+                    <Input className="border-white/70 bg-white/80" name="status" placeholder="Status" defaultValue="new" />
+                    <Input className="border-white/70 bg-white/80" name="city" placeholder="City" />
+                    <Input className="border-white/70 bg-white/80" name="country" placeholder="Country" />
                   </div>
-                  <Textarea name="description" placeholder="Short note on the business and why it may fit Stirling QR." />
-                  <Button type="submit">Create company</Button>
+                  <Textarea className="border-white/70 bg-white/80" name="description" placeholder="Short note on the business and why it may fit Stirling QR." />
+                  <Button className="rounded-full" type="submit">Create company</Button>
                 </form>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Search leads</CardTitle>
-                <CardDescription>Phase 3 search intake via SerpAPI. Saves URLs into `lead_sources`, skips duplicate websites, and tries to avoid aggregators so you get official business sites.</CardDescription>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Search leads</CardTitle>
+                <CardDescription>Search by niche and location. Results are shown one by one so you can pick which companies to add — AI fills in email, website, country, and industry automatically.</CardDescription>
               </CardHeader>
               <CardContent>
-                <form action={searchCompanies} className="grid gap-3">
-                  <Input name="niche" placeholder="Niche: restaurants, estate agents, venues" required />
-                  <Input name="location" placeholder="Location: Stirling, Glasgow, Stockholm" required />
-                  <Button type="submit">Search and save leads</Button>
+                <form method="GET" action="/dashboard/search" className="grid gap-3">
+                  <Input className="border-white/70 bg-white/80" name="niche" placeholder="Niche: hotels, restaurants, estate agents, venues" required />
+                  <Input className="border-white/70 bg-white/80" name="location" placeholder="Location: Glasgow, Edinburgh, Paris, Stockholm" required />
+                  <Button className="rounded-full" type="submit">
+                    <Search className="mr-2 h-4 w-4" />
+                    Search leads
+                  </Button>
                 </form>
-                <p className="mt-3 text-sm text-[var(--muted-foreground)]">
-                  Search filter note: hotels use the strictest filter and try to skip booking, review, price-comparison, and recommendation sites.
+                <p className="mt-3 text-sm text-slate-500">
+                  Aggregator, review, and booking sites are filtered out automatically.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Manage companies</CardTitle>
-                <CardDescription>Export your company list to Excel or clear all company records you own.</CardDescription>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Manage list</CardTitle>
+                <CardDescription>Export your lead list to Excel or wipe your workspace when you want a clean slate.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <a href="/dashboard/export">
-                  <Button type="button" variant="outline">
+                  <Button className="rounded-full" type="button" variant="outline">
+                    <Download className="mr-2 h-4 w-4" />
                     Export to Excel
                   </Button>
                 </a>
 
-                <form action={clearCompanies} className="space-y-3 rounded-2xl border border-red-200 p-4">
-                  <p className="text-sm text-[var(--muted-foreground)]">This deletes all companies you created, plus related contacts, notes, evidence, drafts, sends, and demos.</p>
-                  <Input name="confirmation" placeholder='Type "CLEAR" to confirm' />
-                  <Button type="submit">Clear company list</Button>
+                <form action={clearCompanies} className="space-y-3 rounded-[1.5rem] border border-red-200 bg-red-50/45 p-4">
+                  <p className="text-sm text-slate-600">This deletes all companies you created, plus related contacts, notes, evidence, drafts, sends, and demos.</p>
+                  <Input className="border-white/70 bg-white/85" name="confirmation" placeholder='Type "CLEAR" to confirm' />
+                  <Button className="rounded-full" type="submit" variant="outline">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear company list
+                  </Button>
                 </form>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className={workspaceCardClass}>
             <CardHeader>
-              <CardTitle>Companies</CardTitle>
-              <CardDescription>Lead list with status and quick drill-down into each record.</CardDescription>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em]">Companies</CardTitle>
+                  <CardDescription>Lead list with status, category, location, and quick drill-down into each record.</CardDescription>
+                </div>
+                <Link className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-800" href="/dashboard/analytics">
+                  See category performance
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
             </CardHeader>
-            <CardContent>
-              {(companies ?? []).length === 0 ? (
-                <div className="rounded-2xl border border-dashed p-6 text-sm text-[var(--muted-foreground)]">
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <WorkspacePill>Recent leads</WorkspacePill>
+                <WorkspacePill>Category analytics live</WorkspacePill>
+                <WorkspacePill>Official-site filtering on</WorkspacePill>
+              </div>
+              {recentCompanies.length === 0 ? (
+                <div className="rounded-[1.5rem] border border-dashed border-white/80 bg-white/65 p-6 text-sm text-slate-500">
                   No companies yet. Add one manually or import them from search.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {(companies ?? []).map((company) => (
+                  {recentCompanies.map((company) => (
                     <Link
-                      className="block rounded-2xl border p-4 transition hover:border-[var(--primary)] hover:bg-white"
+                      className={`block p-4 transition hover:border-white hover:bg-white ${workspaceInsetClass}`}
                       href={`/dashboard/companies/${company.id}`}
                       key={company.id}
                     >
                       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                         <div>
-                          <p className="font-medium">{company.name}</p>
-                          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                          <p className="font-medium text-slate-800">{company.name}</p>
+                          <p className="mt-1 text-sm text-slate-500">
                             {[company.industry, company.city, company.country].filter(Boolean).join(" · ") || "No location yet"}
                           </p>
-                          {company.website_url ? <p className="mt-2 text-sm text-[var(--primary)]">{company.website_url}</p> : null}
+                          {company.website_url ? <p className="mt-2 text-sm text-slate-700">{company.website_url}</p> : null}
                         </div>
-                        <span className="rounded-full bg-[var(--muted)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                        <WorkspacePill>
                           {company.status}
-                        </span>
+                        </WorkspacePill>
                       </div>
                     </Link>
                   ))}
@@ -175,21 +197,25 @@ export default async function DashboardPage({
             </CardContent>
           </Card>
         </section>
-      </div>
     </main>
   );
 }
 
-function DashboardCard({ title, value, description }: { title: string; value: string; description: string }) {
+function DashboardCard({
+  icon,
+  title,
+  value,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: string;
+  description: string;
+}) {
   return (
-    <Card>
-      <CardHeader>
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="text-4xl">{value}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-[var(--muted-foreground)]">{description}</p>
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      <WorkspaceMetricCard icon={icon} title={title} value={value} />
+      <p className="px-1 text-sm text-slate-600">{description}</p>
+    </div>
   );
 }

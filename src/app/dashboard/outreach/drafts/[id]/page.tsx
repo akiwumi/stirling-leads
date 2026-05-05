@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkspaceBanner, WorkspaceEmptyState, WorkspaceHero, WorkspacePill, workspaceCardClass, workspaceInsetClass, workspaceSoftInsetClass } from "@/components/workspace-theme";
 import { createClient } from "@/lib/supabase/server";
 
 import { approveDraft, markSendEvent, sendApprovedDraft, updateDraft } from "../../../actions";
@@ -49,25 +50,25 @@ export default async function DraftDetailPage({
   ]);
 
   return (
-    <main className="min-h-screen px-6 py-8 lg:px-10">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <div>
-          <Link className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)]" href="/dashboard/outreach">
+    <main className="space-y-8">
+      <WorkspaceHero
+        actions={
+          <Link className="inline-flex rounded-full border border-white/80 bg-white/85 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-white" href="/dashboard/outreach">
             Back to outreach
           </Link>
-          <h1 className="mt-3 text-3xl font-semibold">Draft review</h1>
-          <p className="mt-2 text-[var(--muted-foreground)]">
-            {company?.name || "Lead"} · {contact?.email || "No contact email"}
-          </p>
-        </div>
+        }
+        description={`${company?.name || "Lead"} · ${contact?.email || "No contact email"}`}
+        eyebrow="Draft review"
+        title="Review, approve, send"
+      />
 
-        {query.error ? <Banner tone="error" text={errorMessages[query.error] || "Action failed."} /> : null}
-        {query.sent === "done" ? <Banner tone="success" text="Email sent and logged." /> : null}
+      {query.error ? <WorkspaceBanner tone="error" text={errorMessages[query.error] || "Action failed."} /> : null}
+      {query.sent === "done" ? <WorkspaceBanner tone="success" text="Email sent and logged." /> : null}
 
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <Card>
+      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className={workspaceCardClass}>
             <CardHeader>
-              <CardTitle>Edit draft</CardTitle>
+              <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Edit draft</CardTitle>
               <CardDescription>Review, edit, and approve before sending.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -105,30 +106,35 @@ export default async function DraftDetailPage({
                 </form>
               </div>
             </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className={workspaceCardClass}>
+              <CardHeader>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Status</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 text-sm">
+                <div className={`${workspaceInsetClass} p-4`}>
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Draft status</p>
+                  <div className="mt-3"><WorkspacePill>{draft.status}</WorkspacePill></div>
+                </div>
+                <div className={`${workspaceSoftInsetClass} p-4`}>
+                  <p>Approved: {draft.approved_by_user ? "yes" : "no"}</p>
+                  <p className="mt-2">Company: {company?.name || "unknown"}</p>
+                  <p className="mt-2">Recipient: {contact?.email || "missing"}</p>
+                </div>
+              </CardContent>
           </Card>
 
-          <div className="space-y-6">
-            <Card>
+          <Card className={workspaceCardClass}>
               <CardHeader>
-                <CardTitle>Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p>Draft status: {draft.status}</p>
-                <p>Approved: {draft.approved_by_user ? "yes" : "no"}</p>
-                <p>Company: {company?.name || "unknown"}</p>
-                <p>Recipient: {contact?.email || "missing"}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tracking</CardTitle>
+                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Tracking</CardTitle>
                 <CardDescription>Manual Phase 9 updates for opens, clicks, replies, and bounces.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {emailSend ? (
                   <>
-                    <div className="text-sm text-[var(--muted-foreground)]">
+                    <div className={`${workspaceSoftInsetClass} p-4 text-sm text-[var(--muted-foreground)]`}>
                       Sent {emailSend.sent_at ? new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(emailSend.sent_at)) : "not yet"}
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -144,31 +150,12 @@ export default async function DraftDetailPage({
                     </div>
                   </>
                 ) : (
-                  <EmptyState text="No send record yet." />
+                  <WorkspaceEmptyState text="No send record yet." />
                 )}
               </CardContent>
-            </Card>
-          </div>
-        </section>
-      </div>
+          </Card>
+        </div>
+      </section>
     </main>
   );
-}
-
-function Banner({ text, tone }: { text: string; tone: "error" | "success" }) {
-  return (
-    <div
-      className={
-        tone === "error"
-          ? "rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700"
-          : "rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-      }
-    >
-      {text}
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-2xl border border-dashed p-4 text-sm text-[var(--muted-foreground)]">{text}</div>;
 }

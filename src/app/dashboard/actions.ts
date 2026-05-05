@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { analyzeCompanyWebsite } from "@/lib/company-analysis";
 import { buildDemoLandingConfig, buildQrCodeDataUrl } from "@/lib/demo";
 import { generateEmailDraft } from "@/lib/email-draft";
-import { buildSearchQuery, extractCompanyName, isLikelyAggregatorSite, normalizeWebsiteUrl } from "@/lib/leads";
+import { buildSearchQuery, extractCompanyName, inferCountryFromHostname, inferCountryFromSearch, isLikelyAggregatorSite, lookupCountryForLocation, normalizeWebsiteUrl } from "@/lib/leads";
 import { scoreLeadWithAI } from "@/lib/lead-score";
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
@@ -59,6 +59,62 @@ async function analyzeWebsiteForCompany(supabase: Awaited<ReturnType<typeof crea
       })),
     );
   }
+
+  return result;
+}
+
+async function syncExtractedCompanyContactData(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  companyId: string,
+  extracted: {
+    primaryEmail: string | null;
+    postalAddress: string | null;
+    contactPageUrl: string | null;
+  },
+) {
+  if (extracted.postalAddress) {
+    await supabase
+      .from("companies")
+      .update({
+        address_line: extracted.postalAddress,
+      })
+      .eq("id", companyId);
+  }
+
+  if (!extracted.primaryEmail) {
+    return;
+  }
+
+  const normalizedEmail = extracted.primaryEmail.toLowerCase();
+  const { data: existingContact } = await supabase
+    .from("contacts")
+    .select("id, source_url, contact_type, consent_basis")
+    .eq("company_id", companyId)
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  if (existingContact) {
+    await supabase
+      .from("contacts")
+      .update({
+        source_url: existingContact.source_url || extracted.contactPageUrl,
+        contact_type: existingContact.contact_type || "website inbox",
+        consent_basis: existingContact.consent_basis || "public website",
+      })
+      .eq("id", existingContact.id);
+
+    return;
+  }
+
+  await supabase.from("contacts").insert({
+    company_id: companyId,
+    name: "Website contact",
+    role: "General enquiries",
+    email: normalizedEmail,
+    contact_type: "website inbox",
+    source_url: extracted.contactPageUrl,
+    consent_basis: "public website",
+  });
 }
 
 async function scoreCompanyLead(
@@ -330,7 +386,18 @@ export async function createCompany(formData: FormData) {
     redirect("/dashboard?error=company_create_failed");
   }
 
+  // AI enrichment: analyze the website if a URL was provided
+  if (websiteUrl) {
+    try {
+      const analysis = await analyzeWebsiteForCompany(supabase, data.id, websiteUrl);
+      await syncExtractedCompanyContactData(supabase, data.id, analysis);
+    } catch {
+      // Keep resilient — company is already saved
+    }
+  }
+
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/directory");
   redirect(`/dashboard/companies/${data.id}`);
 }
 
@@ -414,6 +481,9 @@ export async function searchCompanies(formData: FormData) {
   const organicResults = payload.organic_results ?? [];
   const autoAutomationEnabled = process.env.ENABLE_AUTOMATION === "true";
 
+  // Resolve country once for the entire location rather than per-result
+  const locationCountry = await lookupCountryForLocation(location);
+
   for (const result of organicResults) {
     const normalizedWebsite = normalizeWebsiteUrl(result.link);
 
@@ -427,10 +497,11 @@ export async function searchCompanies(formData: FormData) {
 
     const hostname = new URL(normalizedWebsite).hostname;
     const companyName = extractCompanyName(result.title, hostname);
+    const inferredCountry = locationCountry ?? inferCountryFromHostname(hostname);
 
     const { data: existingCompany } = await supabase
       .from("companies")
-      .select("id")
+      .select("id, country")
       .eq("created_by", user.id)
       .eq("website_url", normalizedWebsite)
       .maybeSingle();
@@ -445,7 +516,7 @@ export async function searchCompanies(formData: FormData) {
           website_url: normalizedWebsite,
           industry: niche,
           city: location,
-          country: "Sweden",
+          country: inferredCountry,
           description: result.snippet ?? null,
           status: "new",
           created_by: user.id,
@@ -454,6 +525,8 @@ export async function searchCompanies(formData: FormData) {
         .single();
 
       companyId = createdCompany?.id;
+    } else if (existingCompany && inferredCountry && existingCompany.country !== inferredCountry) {
+      await supabase.from("companies").update({ country: inferredCountry }).eq("id", companyId);
     }
 
     if (!companyId) {
@@ -476,6 +549,13 @@ export async function searchCompanies(formData: FormData) {
       });
     }
 
+    try {
+      const analysis = await analyzeWebsiteForCompany(supabase, companyId, normalizedWebsite);
+      await syncExtractedCompanyContactData(supabase, companyId, analysis);
+    } catch {
+      // Keep search resilient if a website blocks scraping or has no clear contact details.
+    }
+
     if (!autoAutomationEnabled || !companyId) {
       continue;
     }
@@ -491,7 +571,6 @@ export async function searchCompanies(formData: FormData) {
         continue;
       }
 
-      await analyzeWebsiteForCompany(supabase, companyId, company.website_url);
       const score = await scoreCompanyLead(supabase, companyId, company);
 
       if (score.score >= getHotLeadThreshold()) {
@@ -531,7 +610,8 @@ export async function analyzeLeadWebsite(formData: FormData) {
   }
 
   try {
-    await analyzeWebsiteForCompany(supabase, companyId, company.website_url);
+    const analysis = await analyzeWebsiteForCompany(supabase, companyId, company.website_url);
+    await syncExtractedCompanyContactData(supabase, companyId, analysis);
   } catch {
     redirect(`/dashboard/companies/${companyId}?error=analysis_failed`);
   }
@@ -904,4 +984,181 @@ export async function markSendEvent(formData: FormData) {
 
   await supabase.from("email_sends").update({ [field]: new Date().toISOString() }).eq("id", emailSendId);
   revalidatePath("/dashboard/outreach");
+}
+
+export async function addSearchResult(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const name = String(formData.get("name") ?? "").trim();
+  const websiteUrl = normalizeWebsiteUrl(String(formData.get("websiteUrl") ?? ""));
+  const snippet = String(formData.get("snippet") ?? "").trim() || null;
+  const niche = String(formData.get("niche") ?? "").trim() || null;
+  const location = String(formData.get("location") ?? "").trim() || null;
+  const country = String(formData.get("country") ?? "").trim() || null;
+
+  if (!name || !websiteUrl) {
+    redirect("/dashboard/search?error=missing_fields");
+  }
+
+  const { data: existing } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("created_by", user.id)
+    .eq("website_url", websiteUrl)
+    .maybeSingle();
+
+  if (existing) {
+    redirect(`/dashboard/search?added=${existing.id}`);
+  }
+
+  const { data: created } = await supabase
+    .from("companies")
+    .insert({
+      name,
+      website_url: websiteUrl,
+      industry: niche,
+      city: location,
+      country,
+      description: snippet,
+      status: "new",
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
+
+  if (!created) {
+    redirect("/dashboard/search?error=save_failed");
+  }
+
+  const companyId = created.id;
+
+  // Store the search result as a lead source
+  await supabase.from("lead_sources").insert({
+    company_id: companyId,
+    source_url: websiteUrl,
+    source_type: "search_result",
+    found_text: snippet ?? name,
+  });
+
+  // AI enrichment: analyze website to extract email, contact details, address
+  try {
+    const analysis = await analyzeWebsiteForCompany(supabase, companyId, websiteUrl);
+    await syncExtractedCompanyContactData(supabase, companyId, analysis);
+  } catch {
+    // Keep resilient — company is saved even if AI enrichment fails
+  }
+
+  revalidatePath("/dashboard/directory");
+  redirect(`/dashboard/search?added=${companyId}`);
+}
+
+export async function deleteCompany(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const companyId = String(formData.get("companyId") ?? "");
+
+  if (!companyId) return;
+
+  await supabase.from("companies").delete().eq("id", companyId).eq("created_by", user.id);
+
+  revalidatePath("/dashboard/directory");
+  revalidatePath("/dashboard");
+  redirect("/dashboard/directory");
+}
+
+export async function addMultipleSearchResults(formData: FormData) {
+  const { supabase, user } = await requireUser();
+
+  let selections: Array<{
+    name: string;
+    websiteUrl: string;
+    snippet: string;
+    niche: string;
+    location: string;
+    country: string;
+  }>;
+
+  try {
+    selections = JSON.parse(String(formData.get("selections") ?? "[]"));
+  } catch {
+    redirect("/dashboard/search?error=invalid_selections");
+  }
+
+  if (!Array.isArray(selections) || selections.length === 0) {
+    redirect("/dashboard/directory");
+  }
+
+  const enrichQueue: Array<{ companyId: string; websiteUrl: string }> = [];
+
+  for (const sel of selections) {
+    const websiteUrl = normalizeWebsiteUrl(sel.websiteUrl);
+    if (!websiteUrl) continue;
+
+    const { data: existing } = await supabase
+      .from("companies")
+      .select("id")
+      .eq("created_by", user.id)
+      .eq("website_url", websiteUrl)
+      .maybeSingle();
+
+    if (existing) continue;
+
+    const { data: created } = await supabase
+      .from("companies")
+      .insert({
+        name: sel.name,
+        website_url: websiteUrl,
+        industry: sel.niche || null,
+        city: sel.location || null,
+        country: sel.country || null,
+        description: sel.snippet || null,
+        status: "new",
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+
+    if (!created) continue;
+
+    await supabase.from("lead_sources").insert({
+      company_id: created.id,
+      source_url: websiteUrl,
+      source_type: "search_result",
+      found_text: sel.snippet || sel.name,
+    });
+
+    enrichQueue.push({ companyId: created.id, websiteUrl });
+  }
+
+  // Run website analyses in parallel so email/contact data is ready when directory loads
+  await Promise.allSettled(
+    enrichQueue.map(({ companyId, websiteUrl }) =>
+      analyzeWebsiteForCompany(supabase, companyId, websiteUrl)
+        .then((analysis) => syncExtractedCompanyContactData(supabase, companyId, analysis))
+        .catch(() => undefined)
+    )
+  );
+
+  revalidatePath("/dashboard/directory");
+  redirect("/dashboard/directory");
+}
+
+export async function updateContact(formData: FormData) {
+  const { supabase } = await requireUser();
+  const contactId = String(formData.get("contactId") ?? "");
+  const companyId = String(formData.get("companyId") ?? "");
+  const name = String(formData.get("name") ?? "").trim() || null;
+  const role = String(formData.get("role") ?? "").trim() || null;
+  const email = String(formData.get("email") ?? "").trim().toLowerCase() || null;
+  const phone = String(formData.get("phone") ?? "").trim() || null;
+  const contactType = String(formData.get("contactType") ?? "").trim() || null;
+  const consentBasis = String(formData.get("consentBasis") ?? "").trim() || null;
+
+  if (!contactId) return;
+
+  await supabase
+    .from("contacts")
+    .update({ name, role, email, phone, contact_type: contactType, consent_basis: consentBasis })
+    .eq("id", contactId);
+
+  revalidatePath(`/dashboard/companies/${companyId}`);
+  revalidatePath("/dashboard/directory");
 }
