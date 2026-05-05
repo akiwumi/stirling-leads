@@ -14,6 +14,21 @@ What Phase 10 added:
 - Stronger duplicate prevention
 - Unsubscribe enforcement
 
+What this update adds:
+
+- Monthly pricing at $7 per month
+- Annual pricing at $70 per year
+- Same feature access on both billing cycles
+- A 3-day free trial on all subscription models
+- A no-refunds policy note in the product UI
+- Self-serve registration
+- Email verification
+- A welcome page after verification
+- A required terms-acceptance step before dashboard access
+- A welcome email sent the first time the verified user enters the dashboard from the welcome page
+- A user profile page for account, billing preference, password changes, and password reset links
+- Stored transactional welcome emails in the database
+
 ## 1. What you need before you start
 
 You need accounts for:
@@ -83,6 +98,9 @@ What each one means:
   The email address you send from.
   Example:
   `hello@yourdomain.com`
+- `NEXT_PUBLIC_APP_URL`
+  This must match the real site URL used in Supabase email redirects.
+  The registration verification link and password reset link both depend on it.
 - `ENABLE_AUTOMATION`
   Set to `true` if you want Phase 10 automation turned on.
   Leave `false` if you want to do everything manually.
@@ -121,18 +139,28 @@ Important:
 - If you already ran an older version of the SQL, running this updated version is still the correct thing to do.
 - This SQL uses `create table if not exists` in many places, so it is designed to be re-run safely.
 
-## 6. How to create a login user
+## 6. Supabase auth settings you must configure manually
+
+Before registration and verification will work properly:
 
 1. In Supabase, open `Authentication`
-2. Click `Users`
-3. Click `Add user`
-4. Choose email and password
-5. Create a user you can sign in with
+2. Open `URL Configuration`
+3. Set the site URL to your real app URL
+   - local example: `http://localhost:3000`
+   - production example: `https://yourdomain.com`
+4. Add these redirect URLs:
+   - `http://localhost:3000/auth/confirm`
+   - `http://localhost:3000/welcome`
+   - `http://localhost:3000/reset-password`
+   - your production versions of the same URLs
+5. In `Authentication` → `Providers` → `Email`, turn on email confirmations
+6. Save the settings
 
-Example:
+Important:
 
-- Email: `you@example.com`
-- Password: choose your own secure password
+- If email confirmation is off, the new registration flow will not behave the way this app expects.
+- The verification link lands on `/auth/confirm`, then routes the user to `/welcome`.
+- The password reset flow also uses `/auth/confirm`.
 
 ## 7. How to get the OpenAI API key
 
@@ -216,12 +244,39 @@ http://localhost:3000
 
 ## 14. How to use the app, step by step
 
-### 14.1 Sign in
+### 14.1 Register a user
+
+1. Open `/register`
+2. Enter full name
+3. Enter company name
+4. Enter email
+5. Enter password
+6. Submit the form
+7. Open the verification email from Supabase
+8. Click the verification link
+9. You will land on the app welcome page
+10. Tick the terms and conditions checkbox
+11. Click the dashboard button on the welcome page
+
+What happens when the dashboard button is clicked from the welcome page:
+
+- The app checks that the user email is confirmed
+- The app checks that the terms checkbox was accepted
+- The app stores the terms acceptance timestamp on the user profile
+- The app creates a stored welcome email record in the database
+- The app customises the welcome email using the user name
+- The app sends the welcome email through Resend
+- The app records when the welcome email was sent
+- The app redirects the user into the dashboard
+
+### 14.2 Sign in
 
 1. Open the app
 2. Sign in with the Supabase user you created
+3. If the account has not finished onboarding yet, the app sends the user to `/welcome`
+4. The user must confirm email, accept terms, and complete the first welcome-email handoff before dashboard access is allowed
 
-### 14.2 Add a company manually
+### 14.3 Add a company manually
 
 1. Go to the dashboard
 2. Use `Add company`
@@ -229,7 +284,7 @@ http://localhost:3000
 4. Add the website if you know it
 5. Save
 
-### 14.3 Add a contact
+### 14.4 Add a contact
 
 1. Open the company page
 2. Use the `Contacts` form
@@ -239,7 +294,7 @@ Important:
 
 - Email drafting and sending work best when the contact has a real email address.
 
-### 14.4 Search for leads
+### 14.5 Search for leads
 
 1. On the dashboard, use `Search leads`
 2. Enter a niche
@@ -257,6 +312,73 @@ If `ENABLE_AUTOMATION=true`:
   - score leads
   - create demo pages for hot leads
   - auto-draft emails for hot leads if a usable contact exists
+
+## 15. Pricing and subscription behaviour
+
+The app currently exposes one feature set with two billing-cycle choices:
+
+- Monthly: `$7` per month
+- Annual: `$70` per year
+
+Calculated annual comparison:
+
+- `$70 / 12 = $5.83` per month effective rate
+- Annual saves `$14` compared with paying `$7` monthly for 12 months
+
+Rules now shown in the UI:
+
+- All subscription models have the same feature access
+- Every subscription model gets a 3-day trial
+- No refunds
+
+Current implementation note:
+
+- The app stores the user billing preference and trial dates in Supabase
+- It does not yet charge cards directly
+- If you want real subscription charging, you still need to integrate a billing provider such as Stripe
+
+## 16. Profile, password, and billing controls
+
+The dashboard now includes `/dashboard/profile`.
+
+From that page the user can:
+
+- update full name
+- update company name
+- see verification status
+- switch billing preference between monthly and annual
+- see trial start and end dates
+- see the pricing and no-refund note
+- change password while signed in
+- send a password reset email
+- review stored transactional emails
+
+## 17. Manual email delivery steps for welcome emails
+
+The welcome email uses the same Resend setup as outreach mail.
+
+You must manually ensure:
+
+1. `RESEND_API_KEY` is valid
+2. `RESEND_FROM_EMAIL` belongs to a verified sender domain
+3. DNS for that sender domain is configured correctly
+4. `NEXT_PUBLIC_APP_URL` matches the deployed app URL
+5. The sender inbox and domain comply with your local email laws
+
+If these are not configured:
+
+- the app stores the welcome email attempt in the database first
+- then delivery fails and the user is sent back to `/welcome` with an error
+
+## 18. SQL section reference
+
+When you update Supabase, use the SQL in `supabase/schema.sql`.
+It now includes:
+
+- trial and billing fields on `public.users`
+- email confirmation sync fields
+- a `public.transactional_emails` table
+- auth sync trigger updates for profile metadata and confirmation timestamps
 
 ### 14.5 Score a lead manually
 

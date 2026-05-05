@@ -5,6 +5,7 @@ import { Building2, ExternalLink, Mail, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WorkspaceEmptyState, WorkspaceHero, WorkspacePill, workspaceCardClass, workspaceSelectClass } from "@/components/workspace-theme";
 import { createClient } from "@/lib/supabase/server";
+import { getWorkspaceOwnerId } from "@/lib/workspace";
 
 import { DeleteCompanyButton } from "./DeleteCompanyButton";
 
@@ -30,11 +31,13 @@ export default async function DirectoryPage({
     redirect("/login");
   }
 
+  const workspaceOwnerId = await getWorkspaceOwnerId(supabase, user.id);
+
   // Fetch filter options from ALL companies (not affected by active filters)
   const { data: allForFilters } = await supabase
     .from("companies")
     .select("industry, country")
-    .eq("created_by", user.id);
+    .eq("created_by", workspaceOwnerId);
 
   const allIndustries = [...new Set((allForFilters ?? []).map((c) => c.industry).filter(Boolean))].sort() as string[];
   const allCountries = [...new Set((allForFilters ?? []).map((c) => c.country).filter(Boolean))].sort() as string[];
@@ -44,7 +47,7 @@ export default async function DirectoryPage({
   let companiesQuery = supabase
     .from("companies")
     .select("id, name, website_url, industry, city, country, status, lead_score, lead_temperature, created_at")
-    .eq("created_by", user.id)
+    .eq("created_by", workspaceOwnerId)
     .order("created_at", { ascending: false });
 
   if (filters.industry) companiesQuery = companiesQuery.eq("industry", filters.industry);

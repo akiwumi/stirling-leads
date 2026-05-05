@@ -16,7 +16,11 @@ import {
   analyzeLeadWebsite,
   generateDemo,
   generateLeadDraft,
+  markRoleTargetCovered,
+  pushCompanyToCrm,
+  refreshCompanyNow,
   scoreLead,
+  scrapePersonnel,
   updateCompanyStatus,
   updateContact,
 } from "../../actions";
@@ -26,7 +30,7 @@ export default async function CompanyDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ analysis?: string; demo?: string; error?: string; score?: string }>;
+  searchParams: Promise<{ analysis?: string; demo?: string; error?: string; score?: string; scraped?: string; pages?: string; refreshed?: string; crm?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
@@ -49,8 +53,8 @@ export default async function CompanyDetailPage({
     notFound();
   }
 
-  const [{ data: contacts }, { data: notes }, { data: leadSources }, { data: leadScores }, { data: demos }, { data: drafts }, { data: sends }, { data: campaigns }, { data: templates }] = await Promise.all([
-    supabase.from("contacts").select("*").eq("company_id", id).order("created_at", { ascending: false }),
+  const [{ data: contacts }, { data: notes }, { data: leadSources }, { data: leadScores }, { data: demos }, { data: drafts }, { data: sends }, { data: campaigns }, { data: templates }, { data: roleTargets }] = await Promise.all([
+    supabase.from("contacts").select("*").eq("company_id", id).order("is_decision_maker", { ascending: false }).order("created_at", { ascending: false }),
     supabase.from("company_notes").select("*").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("lead_sources").select("*").eq("company_id", id).order("created_at", { ascending: false }),
     supabase.from("lead_scores").select("*").eq("company_id", id).order("created_at", { ascending: false }).limit(1),
@@ -59,12 +63,13 @@ export default async function CompanyDetailPage({
     supabase.from("email_sends").select("*").eq("company_id", id).order("sent_at", { ascending: false }),
     supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
     supabase.from("email_templates").select("*").order("created_at", { ascending: false }),
+    supabase.from("company_role_targets").select("*").eq("company_id", id).order("priority", { ascending: true }).order("role_label", { ascending: true }),
   ]);
 
   const latestScore = leadScores?.[0] ?? null;
   const latestDemo = demos?.[0] ?? null;
   const errorMessage = getErrorMessage(query.error);
-  const successMessage = getSuccessMessage(query);
+  const successMessage = getSuccessMessage({ analysis: query.analysis, demo: query.demo, score: query.score, scraped: query.scraped, pages: query.pages });
 
   const timeline = [
     {
@@ -187,6 +192,19 @@ export default async function CompanyDetailPage({
                   <form action={generateDemo}>
                     <input name="companyId" type="hidden" value={company.id} />
                     <Button type="submit">Generate demo QR</Button>
+                  </form>
+                  <form action={pushCompanyToCrm}>
+                    <input name="companyId" type="hidden" value={company.id} />
+                    <input name="provider" type="hidden" value="hubspot" />
+                    <Button type="submit" variant="outline">
+                      Push to HubSpot
+                    </Button>
+                  </form>
+                  <form action={refreshCompanyNow}>
+                    <input name="companyId" type="hidden" value={company.id} />
+                    <Button type="submit" variant="outline">
+                      Refresh now
+                    </Button>
                   </form>
                 </div>
 
@@ -352,51 +370,166 @@ export default async function CompanyDetailPage({
             </Card>
 
             <Card className={workspaceCardClass}>
-              <CardHeader>
-                <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">Contacts</CardTitle>
-                <CardDescription>Add the people or inboxes you may contact later.</CardDescription>
+              <CardHeader className="flex-row items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="font-[family:var(--font-display)] text-2xl tracking-[-0.04em] text-slate-800">People</CardTitle>
+                  <CardDescription>
+                    Contacts and decision-makers at this company.
+                    {company.personnel_coverage_status && company.personnel_coverage_status !== "unknown" ? (
+                      <span className={`ml-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${coverageBadgeClass(company.personnel_coverage_status)}`}>
+                        {formatCoverage(company.personnel_coverage_status)}
+                      </span>
+                    ) : null}
+                  </CardDescription>
+                </div>
+                <form action={scrapePersonnel}>
+                  <input name="companyId" type="hidden" value={company.id} />
+                  <Button type="submit" variant="outline" className="shrink-0 text-sm">
+                    Scan team pages
+                  </Button>
+                </form>
               </CardHeader>
               <CardContent className="space-y-5">
+                {company.personnel_gap_notes ? (
+                  <div className="rounded-[1.25rem] border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-800">
+                    {company.personnel_gap_notes}
+                  </div>
+                ) : null}
+
+                {(roleTargets ?? []).length > 0 ? (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {(roleTargets ?? []).map((target) => {
+                      const matched = (contacts ?? []).find((contact) => contact.id === target.primary_contact_id);
+                      const covered = target.status === "covered";
+                      return (
+                        <div key={target.id} className={`${workspaceInsetClass} p-4`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-medium text-slate-800">{target.role_label}</p>
+                              <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">{target.role_bucket}</p>
+                            </div>
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${covered ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>
+                              {covered ? "Covered" : "Missing"}
+                            </span>
+                          </div>
+                          {matched ? (
+                            <Link href={`/dashboard/people/${matched.id}`} className="mt-3 block text-sm text-blue-600 hover:underline">
+                              {matched.name || matched.work_email || matched.email || "Open matched person"} →
+                            </Link>
+                          ) : target.notes ? (
+                            <p className="mt-3 text-sm text-slate-500">{target.notes}</p>
+                          ) : (
+                            <form action={markRoleTargetCovered} className="mt-3">
+                              <input type="hidden" name="companyId" value={company.id} />
+                              <input type="hidden" name="targetId" value={target.id} />
+                              <Button type="submit" variant="outline" className="text-xs">
+                                Mark role as covered
+                              </Button>
+                            </form>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
                 <form action={addContact} className="grid gap-3 md:grid-cols-2">
                   <input name="companyId" type="hidden" value={company.id} />
-                  <Input name="name" placeholder="Contact name" />
-                  <Input name="role" placeholder="Role" />
-                  <Input name="email" placeholder="Email" type="email" />
-                  <Input name="phone" placeholder="Phone" />
-                  <Input name="contactType" placeholder="Type: owner, general, manager" />
-                  <Input name="consentBasis" placeholder="Consent basis" />
+                  <Input name="name" placeholder="Full name" />
+                  <Input name="jobTitle" placeholder="Job title (e.g. Head of Marketing)" />
+                  <Input name="email" placeholder="Work email" type="email" />
+                  <Input name="phone" placeholder="Direct phone" />
+                  <Input name="linkedinUrl" placeholder="LinkedIn URL" />
+                  <select name="seniority" className={workspaceSelectClass}>
+                    <option value="">Seniority</option>
+                    <option value="c_suite">C-Suite</option>
+                    <option value="vp">VP / Director</option>
+                    <option value="manager">Manager / Head</option>
+                    <option value="individual">Individual Contributor</option>
+                  </select>
+                  <select name="department" className={workspaceSelectClass}>
+                    <option value="">Department</option>
+                    <option value="Executive">Executive</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Customer Success">Customer Success</option>
+                    <option value="Product">Product</option>
+                    <option value="Design">Design</option>
+                    <option value="HR">HR</option>
+                  </select>
+                  <Input name="sourceUrl" placeholder="Source URL" type="url" />
                   <div className="md:col-span-2">
-                    <Input name="sourceUrl" placeholder="Source URL" type="url" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Button type="submit">Add contact</Button>
+                    <Button type="submit">Add person</Button>
                   </div>
                 </form>
 
                 <div className="space-y-3">
                   {(contacts ?? []).length === 0 ? (
-                    <WorkspaceEmptyState text="No contacts yet." />
+                    <WorkspaceEmptyState text="No people yet. Use 'Scan team pages' to auto-find or add manually above." />
                   ) : (
                     (contacts ?? []).map((contact) => (
                       <details key={contact.id} className={`${workspaceSoftInsetClass} group`}>
-                        <summary className="flex cursor-pointer list-none items-center justify-between p-4">
-                          <div>
-                            <p className="font-medium">{contact.name || contact.email || "Unnamed contact"}</p>
-                            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                              {[contact.role, contact.email, contact.phone].filter(Boolean).join(" · ") || "No details yet"}
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{contact.name || contact.work_email || contact.email || "Unnamed"}</p>
+                              {contact.is_decision_maker ? (
+                                <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">DM</span>
+                              ) : null}
+                            </div>
+                            <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">
+                              {[contact.job_title || contact.role, contact.role_normalized, contact.seniority].filter(Boolean).join(" · ") || "No title set"}
                             </p>
+                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-[var(--muted-foreground)]">
+                              {(contact.work_email || contact.email) ? <span>{contact.work_email || contact.email}</span> : null}
+                              {(contact.direct_phone || contact.phone) ? <span>{contact.direct_phone || contact.phone}</span> : null}
+                              {contact.linkedin_url ? (
+                                <a href={contact.linkedin_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                  LinkedIn ↗
+                                </a>
+                              ) : null}
+                              {contact.source_url ? (
+                                <a href={contact.source_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline" onClick={(e) => e.stopPropagation()}>
+                                  Source page ↗
+                                </a>
+                              ) : null}
+                              {contact.source_type ? <span className="opacity-60">{contact.source_type.replace(/_/g, " ")}</span> : null}
+                            </div>
                           </div>
-                          <span className="text-xs text-[var(--muted-foreground)] group-open:hidden">Edit</span>
-                          <span className="hidden text-xs text-[var(--muted-foreground)] group-open:block">Close</span>
+                          <span className="shrink-0 text-xs text-[var(--muted-foreground)] group-open:hidden">Edit</span>
+                          <span className="hidden shrink-0 text-xs text-[var(--muted-foreground)] group-open:block">Close</span>
                         </summary>
                         <form action={updateContact} className="grid gap-3 border-t border-[#efe9e1] p-4 md:grid-cols-2">
                           <input type="hidden" name="contactId" value={contact.id} />
                           <input type="hidden" name="companyId" value={id} />
-                          <Input name="name" defaultValue={contact.name ?? ""} placeholder="Contact name" />
-                          <Input name="role" defaultValue={contact.role ?? ""} placeholder="Role" />
-                          <Input name="email" defaultValue={contact.email ?? ""} placeholder="Email" type="email" />
-                          <Input name="phone" defaultValue={contact.phone ?? ""} placeholder="Phone" />
-                          <Input name="contactType" defaultValue={contact.contact_type ?? ""} placeholder="Type: owner, general, manager" />
+                          <Input name="name" defaultValue={contact.name ?? ""} placeholder="Full name" />
+                          <Input name="jobTitle" defaultValue={contact.job_title ?? contact.role ?? ""} placeholder="Job title" />
+                          <Input name="email" defaultValue={contact.work_email ?? contact.email ?? ""} placeholder="Work email" type="email" />
+                          <Input name="phone" defaultValue={contact.direct_phone ?? contact.phone ?? ""} placeholder="Direct phone" />
+                          <Input name="linkedinUrl" defaultValue={contact.linkedin_url ?? ""} placeholder="LinkedIn URL" />
+                          <select name="seniority" defaultValue={contact.seniority ?? ""} className={workspaceSelectClass}>
+                            <option value="">Seniority</option>
+                            <option value="c_suite">C-Suite</option>
+                            <option value="vp">VP / Director</option>
+                            <option value="manager">Manager / Head</option>
+                            <option value="individual">Individual Contributor</option>
+                          </select>
+                          <select name="department" defaultValue={contact.department ?? ""} className={workspaceSelectClass}>
+                            <option value="">Department</option>
+                            <option value="Executive">Executive</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Customer Success">Customer Success</option>
+                            <option value="Product">Product</option>
+                            <option value="Design">Design</option>
+                            <option value="HR">HR</option>
+                          </select>
                           <Input name="consentBasis" defaultValue={contact.consent_basis ?? ""} placeholder="Consent basis" />
                           <div className="md:col-span-2">
                             <Button type="submit">Save changes</Button>
@@ -550,7 +683,7 @@ function getErrorMessage(value?: string) {
   return null;
 }
 
-function getSuccessMessage(query: { analysis?: string; demo?: string; score?: string }) {
+function getSuccessMessage(query: { analysis?: string; demo?: string; score?: string; scraped?: string; pages?: string }) {
   if (query.analysis === "done") {
     return "Website analysis saved.";
   }
@@ -563,5 +696,25 @@ function getSuccessMessage(query: { analysis?: string; demo?: string; score?: st
     return "Demo QR landing page created.";
   }
 
+  if (query.scraped !== undefined) {
+    const count = query.scraped ?? "0";
+    const pages = query.pages ?? "0";
+    return `Team page scan complete. Found ${count} ${Number(count) === 1 ? "person" : "people"} across ${pages} ${Number(pages) === 1 ? "page" : "pages"}.`;
+  }
+
   return null;
+}
+
+function coverageBadgeClass(status: string) {
+  if (status === "complete") return "bg-emerald-100 text-emerald-800";
+  if (status === "partial") return "bg-amber-100 text-amber-800";
+  if (status === "missing_key_roles") return "bg-red-100 text-red-700";
+  return "bg-slate-100 text-slate-600";
+}
+
+function formatCoverage(status: string) {
+  if (status === "complete") return "Coverage: Complete";
+  if (status === "partial") return "Coverage: Partial";
+  if (status === "missing_key_roles") return "Missing key roles";
+  return status;
 }

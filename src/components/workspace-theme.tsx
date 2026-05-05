@@ -97,13 +97,15 @@ export function WorkspaceBanner({
   tone,
 }: {
   text: string;
-  tone: "error" | "success";
+  tone: "error" | "success" | "warning";
 }) {
   return (
     <div
       className={
         tone === "error"
           ? "rounded-[1.5rem] border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-700"
+          : tone === "warning"
+            ? "rounded-[1.5rem] border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-900"
           : "rounded-[1.5rem] border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-800"
       }
     >

@@ -3,16 +3,20 @@
 import { useState, useEffect, useRef } from "react";
 import { ArrowRight, X } from "lucide-react";
 import { signIn } from "@/app/login/actions";
+import { getPricingSummary } from "@/lib/pricing";
 
 export function LandingPage({
   error,
   isLoggedIn,
+  reset,
 }: {
   error?: string;
   isLoggedIn: boolean;
+  reset?: string;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
+  const pricing = getPricingSummary();
 
   useEffect(() => {
     if (error) setModalOpen(true);
@@ -69,9 +73,14 @@ export function LandingPage({
                   <div className="lp-error">
                     {error === "missing_credentials"
                       ? "Enter both email and password."
-                      : "Login failed. Check your credentials."}
+                      : error === "confirm_email"
+                        ? "Verify your email before signing in."
+                        : error === "invalid_confirmation_link"
+                          ? "That email link is invalid or expired."
+                          : "Login failed. Check your credentials."}
                   </div>
                 )}
+                {reset === "done" ? <div className="lp-info-box">Password updated. Sign in with the new password.</div> : null}
                 <div className="lp-field">
                   <label htmlFor="lp-email">Email</label>
                   <input
@@ -99,6 +108,10 @@ export function LandingPage({
                   Enter dashboard
                   <ArrowRight size={16} />
                 </button>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
+                  <a href="/reset-password" style={{ color: "#4f46e5", textDecoration: "none" }}>Forgot password?</a>
+                  <a href="/register" style={{ color: "#111827", textDecoration: "none", fontWeight: 600 }}>Create account</a>
+                </div>
               </form>
             )}
           </div>
@@ -122,6 +135,7 @@ export function LandingPage({
           <ul className="lp-nav-links">
             <li><a href="#features">Features</a></li>
             <li><a href="#showcase">How it works</a></li>
+            <li><a href="#pricing">Pricing</a></li>
           </ul>
 
           <div className="lp-nav-actions">
@@ -130,7 +144,7 @@ export function LandingPage({
             ) : (
               <>
                 <button className="lp-btn-ghost" onClick={() => setModalOpen(true)}>Sign In</button>
-                <button className="lp-btn-primary" onClick={() => setModalOpen(true)}>Get started →</button>
+                <a className="lp-btn-primary" href="/register">Get started →</a>
               </>
             )}
           </div>
@@ -164,10 +178,10 @@ export function LandingPage({
                   <ArrowRight size={16} />
                 </a>
               ) : (
-                <button className="lp-btn-hero-primary" onClick={() => setModalOpen(true)}>
-                  Start for free
+                <a className="lp-btn-hero-primary" href="/register">
+                  Start free {pricing.trialDays}-day trial
                   <ArrowRight size={16} />
-                </button>
+                </a>
               )}
               <a href="#showcase" className="lp-btn-hero-secondary">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -407,6 +421,89 @@ export function LandingPage({
           </div>
         </section>
 
+        <section id="pricing" style={{ padding: "0 28px 80px" }}>
+          <div
+            style={{
+              maxWidth: 1180,
+              margin: "0 auto",
+              borderRadius: 36,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "linear-gradient(180deg, rgba(10,12,18,0.96), rgba(20,24,36,0.94))",
+              padding: 32,
+              color: "#fff",
+              boxShadow: "0 24px 80px rgba(4,6,12,0.28)",
+            }}
+          >
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "space-between", alignItems: "flex-end" }}>
+              <div style={{ maxWidth: 560 }}>
+                <div style={{ fontSize: 12, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>Pricing</div>
+                <h2 style={{ marginTop: 12, fontSize: "clamp(2rem,4vw,3.25rem)", lineHeight: 1, letterSpacing: "-0.05em" }}>
+                  Self-serve for reps. Team plan for shared execution.
+                </h2>
+                <p style={{ marginTop: 16, fontSize: 15, lineHeight: 1.8, color: "rgba(255,255,255,0.72)" }}>
+                  Start with a {pricing.trialDays}-day free trial, choose Solo or Team, and move to Enterprise only when procurement or custom onboarding is needed.
+                </p>
+              </div>
+              {!isLoggedIn ? (
+                <a
+                  href="/register"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    borderRadius: 999,
+                    background: "#fff",
+                    color: "#111827",
+                    padding: "14px 20px",
+                    textDecoration: "none",
+                    fontWeight: 700,
+                  }}
+                >
+                  Start trial
+                  <ArrowRight size={16} />
+                </a>
+              ) : null}
+            </div>
+
+            <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", marginTop: 28 }}>
+              {[
+                {
+                  title: "Solo",
+                  price: `${pricing.solo.monthlyPriceLabel}/mo`,
+                  detail: `Annual option ${pricing.solo.annualPriceLabel}/yr. Equivalent to ${pricing.solo.annualMonthlyEquivalentLabel}/mo.`,
+                },
+                {
+                  title: "Team",
+                  price: `${pricing.team.monthlyPriceLabel}/mo`,
+                  detail: `Up to 3 seats. Annual option ${pricing.team.annualPriceLabel}/yr and shared workspace controls.`,
+                },
+                {
+                  title: "Enterprise",
+                  price: pricing.enterprise.pricingLabel,
+                  detail: "Custom annual contract, invoice billing, onboarding support, and procurement docs.",
+                },
+              ].map((plan) => (
+                <div
+                  key={plan.title}
+                  style={{
+                    borderRadius: 28,
+                    padding: 24,
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{plan.title}</div>
+                  <div style={{ marginTop: 12, fontSize: 38, fontWeight: 700, letterSpacing: "-0.05em" }}>{plan.price}</div>
+                  <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7, color: "rgba(255,255,255,0.7)" }}>{plan.detail}</p>
+                  <div style={{ marginTop: 18, fontSize: 13, color: "#8ef0c5" }}>
+                    {plan.title === "Enterprise" ? "Talk to sales" : `${pricing.trialDays}-day free trial`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         </main>
 
         {/* FOOTER */}
@@ -428,13 +525,15 @@ export function LandingPage({
               <ul className="lp-footer-links">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#showcase">How it works</a></li>
+                <li><a href="#pricing">Pricing</a></li>
               </ul>
             </div>
             <div>
               <div className="lp-footer-col-title">Account</div>
               <ul className="lp-footer-links">
                 <li><button className="lp-footer-btn" onClick={() => setModalOpen(true)}>Sign In</button></li>
-                <li><button className="lp-footer-btn" onClick={() => setModalOpen(true)}>Get Started</button></li>
+                <li><a href="/register">Get Started</a></li>
+                <li><a href="/reset-password">Reset password</a></li>
                 <li><a href="/dashboard">Dashboard</a></li>
               </ul>
             </div>
@@ -442,16 +541,16 @@ export function LandingPage({
               <div className="lp-footer-col-title">Company</div>
               <ul className="lp-footer-links">
                 <li><a href="#">About</a></li>
-                <li><a href="#">Contact</a></li>
-                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="/contact">Contact</a></li>
+                <li><a href="/privacy-policy">Privacy Policy</a></li>
               </ul>
             </div>
           </div>
           <div className="lp-footer-bottom">
             <span className="lp-footer-copy">© Stirling Market Leads 2024 All rights reserved</span>
             <div className="lp-footer-legal">
-              <a href="#">Privacy Policy</a>
-              <a href="#">Terms of Service</a>
+              <a href="/privacy-policy">Privacy Policy</a>
+              <a href="/privacy-policy#terms">Terms of Service</a>
             </div>
           </div>
         </footer>

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { getPostSignInPath } from "@/lib/auth-flow";
 import { createClient } from "@/lib/supabase/server";
 
 import { signOut } from "./actions";
@@ -17,6 +18,12 @@ export default async function DashboardLayout({
 
   if (!user) {
     redirect("/login");
+  }
+
+  const nextPath = await getPostSignInPath(supabase, user.id);
+
+  if (nextPath !== "/dashboard") {
+    redirect(nextPath);
   }
 
   return <WorkspaceShell signOutAction={signOut}>{children}</WorkspaceShell>;

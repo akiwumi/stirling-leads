@@ -4,7 +4,7 @@ import { LandingPage } from "@/components/landing-page";
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string }>;
 }) {
   const params = await searchParams;
   const supabase = await createClient();
@@ -12,5 +12,5 @@ export default async function HomePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  return <LandingPage error={params.error} isLoggedIn={Boolean(user)} />;
+  return <LandingPage error={params.error} isLoggedIn={Boolean(user)} reset={params.reset} />;
 }

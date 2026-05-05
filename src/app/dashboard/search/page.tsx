@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { WorkspaceBanner, WorkspaceEmptyState, WorkspaceHero, workspaceCardClass } from "@/components/workspace-theme";
 import { buildSearchQuery, extractCompanyName, inferCountryFromHostname, isLikelyAggregatorSite, lookupCountryForLocation, normalizeWebsiteUrl } from "@/lib/leads";
 import { createClient } from "@/lib/supabase/server";
+import { getWorkspaceOwnerId } from "@/lib/workspace";
 
 import { SearchResultsClient, type ClientResult } from "./SearchResultsClient";
 
@@ -30,6 +31,8 @@ export default async function SearchPage({
   if (!user) {
     redirect("/login");
   }
+
+  const workspaceOwnerId = await getWorkspaceOwnerId(supabase, user.id);
 
   const niche = params.niche?.trim() ?? "";
   const location = params.location?.trim() ?? "";
@@ -73,7 +76,7 @@ export default async function SearchPage({
             const { data: existing } = await supabase
               .from("companies")
               .select("website_url")
-              .eq("created_by", user.id)
+              .eq("created_by", workspaceOwnerId)
               .in("website_url", websiteUrls);
 
             existingWebsites = new Set(

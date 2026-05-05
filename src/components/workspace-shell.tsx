@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, BookOpen, HelpCircle, LayoutGrid, LogOut, Mail, Search, Sparkles, UserCircle2 } from "lucide-react";
+import { BarChart3, Bell, BookOpen, CreditCard, Download, HelpCircle, LayoutGrid, ListChecks, Link2, LogOut, Mail, Search, ShieldCheck, Users, UserCircle2 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { workspaceRootStyle } from "@/components/workspace-theme";
@@ -16,9 +16,18 @@ type NavItem = {
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: <LayoutGrid className="h-[1.15rem] w-[1.15rem]" /> },
   { href: "/dashboard/directory", label: "Directory", icon: <BookOpen className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/people", label: "People", icon: <Users className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/lists", label: "Lists", icon: <ListChecks className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/team", label: "Team", icon: <ShieldCheck className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/integrations", label: "Integrations", icon: <Link2 className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/updates", label: "Updates", icon: <Bell className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/exports", label: "Exports", icon: <Download className="h-[1.15rem] w-[1.15rem]" /> },
   { href: "/dashboard/analytics", label: "Analytics", icon: <BarChart3 className="h-[1.15rem] w-[1.15rem]" /> },
   { href: "/dashboard/outreach", label: "Outreach", icon: <Mail className="h-[1.15rem] w-[1.15rem]" /> },
   { href: "/dashboard/help", label: "Help", icon: <HelpCircle className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/contact", label: "Contact", icon: <Mail className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/billing", label: "Billing", icon: <CreditCard className="h-[1.15rem] w-[1.15rem]" /> },
+  { href: "/dashboard/profile", label: "Profile", icon: <UserCircle2 className="h-[1.15rem] w-[1.15rem]" /> },
 ];
 
 export function WorkspaceShell({
@@ -49,6 +58,12 @@ export function WorkspaceShell({
                     ? pathname === "/dashboard"
                     : item.href === "/dashboard/directory"
                     ? pathname === "/dashboard/directory" || pathname.startsWith("/dashboard/companies") || pathname.startsWith("/dashboard/search")
+                    : item.href === "/dashboard/people"
+                    ? pathname === "/dashboard/people" || pathname.startsWith("/dashboard/people/")
+                    : item.href === "/dashboard/lists"
+                    ? pathname === "/dashboard/lists" || pathname.startsWith("/dashboard/lists/")
+                    : item.href === "/dashboard/team"
+                    ? pathname === "/dashboard/team"
                     : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
                 return (
@@ -80,12 +95,16 @@ export function WorkspaceShell({
                   <span className="sr-only">Log out</span>
                 </button>
               </form>
-              <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#5f87ff,#2c46c7)] text-white shadow-[0_10px_24px_rgba(44,70,199,0.2)]">
+              <Link
+                className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(135deg,#5f87ff,#2c46c7)] text-white shadow-[0_10px_24px_rgba(44,70,199,0.2)] transition hover:scale-[1.02]"
+                href="/dashboard/profile"
+                title="Profile"
+              >
                 <UserCircle2 className="h-8 w-8" />
                 <span className="absolute -right-1 -top-1 inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#ff2d66] px-1.5 text-[11px] font-semibold text-white">
                   12
                 </span>
-              </div>
+              </Link>
             </div>
           </div>
 
